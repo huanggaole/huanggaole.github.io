@@ -1,0 +1,7 @@
+[
+null,
+{"id":1,"battlerName":"","characterIndex":2,"characterName":"剧情大挑战4角色1","classId":1,"equips":[1,1,0,10,0],"faceIndex":0,"faceName":"剧情大挑战4士兵","traits":[],"initialLevel":1,"maxLevel":99,"name":"透小明","nickname":"","note":"","profile":""},
+{"id":2,"battlerName":"","characterIndex":3,"characterName":"剧情大挑战4角色2","classId":2,"equips":[3,2,8,11,0],"faceIndex":0,"faceName":"剧情大挑战4女仆","traits":[],"initialLevel":1,"maxLevel":99,"name":"吕蒲","nickname":"","note":"","profile":""},
+{"id":3,"battlerName":"","characterIndex":1,"characterName":"剧情大挑战4角色1","classId":3,"equips":[13,0,9,13,0],"faceIndex":0,"faceName":"剧情大挑战4史莱姆娘","traits":[],"initialLevel":6,"maxLevel":99,"name":"史莱妹","nickname":"","note":"","profile":""},
+{"id":4,"battlerName":"","characterIndex":4,"characterName":"剧情大挑战4角色2","classId":4,"equips":[2,3,0,12,0],"faceIndex":0,"faceName":"剧情大挑战4厨师","traits":[],"initialLevel":4,"maxLevel":99,"name":"储狮","nickname":"","note":"","profile":""}
+]
