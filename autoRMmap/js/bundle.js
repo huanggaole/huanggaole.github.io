@@ -1041,6 +1041,7 @@
             });
             this.dungeonBox = new Laya.Box();
             this.dungeoncombo = new Laya.ComboBox("comp/combobox.png", "土洞穴(Dirt Cave),岩洞窟(Rock Cave),溶岩洞窟(Lava Cave),冰洞窟(Ice Cave),草迷宮(Grass Maze),水晶(Crystal),体内(In Body),魔界(Demonic World)");
+            this.dungeoncombo.scrollBarSkin = "comp/vscroll.png";
             this.dungeoncombo.selectedIndex = 0;
             this.dungeoncombo.itemSize = 15;
             this.dungeoncombo.selectHandler = new Laya.Handler(this, () => {
@@ -1066,10 +1067,10 @@
                 let width, height;
                 width = parseInt(this.widthText.text);
                 height = parseInt(this.heightText.text);
-                if (!width && width > 0) {
+                if (!width || width <= 0 || width === NaN) {
                     alert("请输入有效的地图宽度\nPlease enter a valid map width");
                 }
-                else if (!height && height > 0) {
+                else if (!height || height <= 0 || height === NaN) {
                     alert("请输入有效的地图高度\nPlease enter a valid map height");
                 }
                 else if (this.combo.selectedIndex < 0) {
@@ -1110,8 +1111,9 @@
             this.zoomIn.x = 300;
             this.zoomIn.width = 40;
             this.dungeonBox.width = 150;
+            this.dungeonBox.height = 500;
             this.dungeonBox.y = 250;
-            this.dungeoncombo.width = 150;
+            this.dungeoncombo.width = 180;
             this.dungeoncombo.height = 30;
             this.widthText.type = "number";
             this.heightText.type = "number";
