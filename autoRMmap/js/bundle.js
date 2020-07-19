@@ -561,8 +561,13 @@
                 }
             }
             this.initTilesType();
-            this.initRandomMap();
-            this.autoCell();
+            if (this.width <= 25 && this.height <= 25) {
+                this.initSmallRandomMap();
+            }
+            else {
+                this.initRandomMap();
+                this.autoCell();
+            }
             this.connectAllBase();
             this.generateWall();
             this.fillWallTops();
@@ -573,6 +578,17 @@
             this.Base = 1553;
             this.Wall = 6320;
             this.WallTop = 5936;
+        }
+        initSmallRandomMap() {
+            if (this.width < this.widthmargin * 2 + 1 || this.height < this.heightmargin * 2 + 1) {
+                return;
+            }
+            let seednum = 2 + Math.floor(MathUtil.random() * this.width * this.height / 6);
+            for (let i = 0; i < seednum; i++) {
+                const tempx = this.widthmargin + Math.floor(MathUtil.random() * (this.width - this.widthmargin * 2));
+                const tempy = this.heightmargin + Math.floor(MathUtil.random() * (this.height - this.heightmargin * 2));
+                this.data1[tempy * this.width + tempx] = this.Base;
+            }
         }
         initRandomMap() {
             this.widthmargin = 3;
