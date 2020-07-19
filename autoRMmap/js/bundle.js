@@ -195,6 +195,11 @@
             }
         }
         analyseA3(A3) {
+            for (let j = 0; j < 4; j++) {
+                for (let i = 0; i < 8; i++) {
+                    this.generateWall(Laya.Texture.createFromTexture(A3, i * 96, j * 96, 96, 96), 4352 + 48 * (j * 8 + i));
+                }
+            }
         }
         analyseA4(A4) {
             for (let j = 0; j < 3; j++) {
@@ -383,7 +388,7 @@
             cld = !cld;
             cd = !cd;
             crd = !crd;
-            if (!clu && !cu && !cru && !cl && !cr && !cld && !cd && !crd) {
+            if (!cu && !cl && !cr && !cd) {
                 resvalue += 0;
             }
             if (clu && !cu && !cru && !cl && !cr && !cld && !cd && !crd) {
@@ -524,9 +529,6 @@
             if (cu && cl && cr && cd) {
                 resvalue += 46;
             }
-            if (cu && cl && cr && cd) {
-                resvalue += 47;
-            }
             return resvalue;
         }
     }
@@ -575,9 +577,46 @@
             this.data = this.data1.concat(this.data2.concat(this.data3.concat(this.data4.concat(this.data5.concat(this.data6)))));
         }
         initTilesType() {
-            this.Base = 1553;
-            this.Wall = 6320;
-            this.WallTop = 5936;
+            if (DungeonGenerator.dungeontype === 0) {
+                this.Base = 1552;
+                this.Wall = 6272;
+                this.WallTop = 5888;
+            }
+            else if (DungeonGenerator.dungeontype === 1) {
+                this.Base = 1553;
+                this.Wall = 6320;
+                this.WallTop = 5936;
+            }
+            else if (DungeonGenerator.dungeontype === 2) {
+                this.Base = 1554;
+                this.Wall = 6368;
+                this.WallTop = 5984;
+            }
+            else if (DungeonGenerator.dungeontype === 3) {
+                this.Base = 1555;
+                this.Wall = 6416;
+                this.WallTop = 6032;
+            }
+            else if (DungeonGenerator.dungeontype === 4) {
+                this.Base = 1556;
+                this.Wall = 6464;
+                this.WallTop = 6080;
+            }
+            else if (DungeonGenerator.dungeontype === 5) {
+                this.Base = 1557;
+                this.Wall = 6512;
+                this.WallTop = 6128;
+            }
+            else if (DungeonGenerator.dungeontype === 6) {
+                this.Base = 1558;
+                this.Wall = 6560;
+                this.WallTop = 6176;
+            }
+            else if (DungeonGenerator.dungeontype === 7) {
+                this.Base = 1559;
+                this.Wall = 6608;
+                this.WallTop = 6224;
+            }
         }
         initSmallRandomMap() {
             if (this.width < this.widthmargin * 2 + 1 || this.height < this.heightmargin * 2 + 1) {
@@ -814,6 +853,7 @@
             }
         }
     }
+    DungeonGenerator.dungeontype = 0;
 
     class MapGenerator {
         static getTiledSetID(maptype) {
@@ -968,6 +1008,7 @@
             this.widthText = new Laya.TextInput();
             this.heightText = new Laya.TextInput();
             this.combo = new Laya.ComboBox("comp/combobox.png", "地牢(dungeon)");
+            this.combo.itemSize = 15;
             this.widthlbl = new Laya.Label("地图宽度(Map width)");
             this.heightlbl = new Laya.Label("地图高度(Map height)");
             this.zoomOut = new Laya.Button("comp/button.png", "-");
@@ -998,10 +1039,20 @@
                 this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
                 this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
             });
+            this.dungeonBox = new Laya.Box();
+            this.dungeoncombo = new Laya.ComboBox("comp/combobox.png", "土洞穴(Dirt Cave),岩洞窟(Rock Cave),溶岩洞窟(Lava Cave),冰洞窟(Ice Cave),草迷宮(Grass Maze),水晶(Crystal),体内(In Body),魔界(Demonic World)");
+            this.dungeoncombo.selectedIndex = 0;
+            this.dungeoncombo.itemSize = 15;
+            this.dungeoncombo.selectHandler = new Laya.Handler(this, () => {
+                DungeonGenerator.dungeontype = this.dungeoncombo.selectedIndex;
+            });
+            this.dungeonBox.addChild(this.dungeoncombo);
+            this.dungeonBox.visible = false;
             this.widthlbl.color = "#ffffff";
             this.heightlbl.color = "#ffffff";
             this.widthText.skin = "comp/textinput.png";
             this.heightText.skin = "comp/textinput.png";
+            this.combo.selectHandler = new Laya.Handler(this, this.onSelectCombo);
             this.saveBtn.on(Laya.Event.CLICK, this, () => {
                 if (Map.instance.mapstr === "") {
                     alert("首先，请生成地图。\nPlease generate a map first.");
@@ -1058,6 +1109,10 @@
             this.zoomlbl.bgColor = "#ffffff";
             this.zoomIn.x = 300;
             this.zoomIn.width = 40;
+            this.dungeonBox.width = 150;
+            this.dungeonBox.y = 250;
+            this.dungeoncombo.width = 150;
+            this.dungeoncombo.height = 30;
             this.widthText.type = "number";
             this.heightText.type = "number";
             this.widthText.restrict = "0123456789";
@@ -1069,6 +1124,7 @@
             this.addChild(this.heightlbl);
             this.addChild(this.heightText);
             this.addChild(this.combo);
+            this.addChild(this.dungeonBox);
             this.addChild(this.zoomIn);
             this.addChild(this.zoomlbl);
             this.addChild(this.zoomOut);
@@ -1140,6 +1196,11 @@
                         this.bgImage.graphics.drawImage(tm.tiletextures[type], colindex * 48, rowindex * 48, 48, 48);
                     }
                 }
+            }
+        }
+        onSelectCombo() {
+            if (this.combo.selectedLabel === "地牢(dungeon)") {
+                this.dungeonBox.visible = true;
             }
         }
     }
