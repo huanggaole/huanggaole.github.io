@@ -542,6 +542,8 @@
             this.Base = 1553;
             this.Wall = 6320;
             this.WallTop = 5936;
+            this.widthmargin = 3;
+            this.heightmargin = 3;
             this.eightX = [-1, 0, 1, -1, 1, -1, 0, 1];
             this.eightY = [-1, -1, -1, 0, 0, 1, 1, 1];
             this.fourX = [-1, 1, 0, 0];
@@ -570,13 +572,14 @@
         initTilesType() {
             this.Base = 1553;
             this.Wall = 6320;
+            this.WallTop = 5936;
         }
         initRandomMap() {
-            let widthmargin = 3;
-            let heightmargin = 3;
+            this.widthmargin = 3;
+            this.heightmargin = 3;
             for (let j = 0; j < this.height; j++) {
                 for (let i = 0; i < this.width; i++) {
-                    if (i > widthmargin && i < this.width - widthmargin && j > heightmargin && j < this.height - heightmargin) {
+                    if (i > this.widthmargin && i < this.width - this.widthmargin && j > this.heightmargin && j < this.height - this.heightmargin) {
                         this.data1[j * this.width + i] = MathUtil.random() * 2 < 1 ? 0 : this.Base;
                     }
                 }
@@ -590,8 +593,8 @@
             }
             while (itertime > 0) {
                 itertime--;
-                for (let i = 1; i < this.height - 1; i++) {
-                    for (let j = 1; j < this.width - 1; j++) {
+                for (let i = this.heightmargin; i < this.height - this.heightmargin; i++) {
+                    for (let j = this.widthmargin; j < this.width - this.widthmargin; j++) {
                         let roadCount = 0;
                         for (let k = i - 1; k <= i + 1; k++) {
                             for (let l = j - 1; l <= j + 1; l++) {
@@ -682,7 +685,7 @@
                             let tempP = paths[j][paths[j].length - 1];
                             let rndD = Math.floor(MathUtil.random() * 4);
                             const newP = new Laya.Point(tempP.x + this.fourX[rndD], tempP.y + this.fourY[rndD]);
-                            if (newP.x >= 0 && newP.x < this.width && newP.y >= 0 && newP.y < this.height) {
+                            if (newP.x >= this.widthmargin && newP.x < this.width - this.widthmargin && newP.y >= this.heightmargin && newP.y < this.height - this.heightmargin) {
                                 paths[j].push(newP);
                                 if (noteregions[newP.y * this.width + newP.x] === maxid) {
                                     findpathindex = j;
@@ -742,8 +745,8 @@
             }
         }
         fillWallTops() {
-            for (let i = 1; i < this.height - 1; i++) {
-                for (let j = 1; j < this.width - 1; j++) {
+            for (let i = 0; i < this.height; i++) {
+                for (let j = 0; j < this.width; j++) {
                     if (this.data1[i * this.width + j] === 0) {
                         this.data1[i * this.width + j] = this.WallTop;
                     }
@@ -936,6 +939,7 @@
     class MainScene extends Laya.Scene {
         constructor() {
             super();
+            this.zoomscale = 1.0;
             this.width = Laya.stage.width = window.innerWidth;
             this.height = Laya.stage.height = window.innerHeight;
             this.bgImage = new Laya.Image();
@@ -950,6 +954,34 @@
             this.combo = new Laya.ComboBox("comp/combobox.png", "地牢(dungeon)");
             this.widthlbl = new Laya.Label("地图宽度(Map width)");
             this.heightlbl = new Laya.Label("地图高度(Map height)");
+            this.zoomOut = new Laya.Button("comp/button.png", "-");
+            this.zoomlbl = new Laya.Label(Math.round(this.zoomscale * 100).toString() + "%");
+            this.zoomlbl.fontSize = 15;
+            this.zoomlbl.y = 18;
+            this.zoomIn = new Laya.Button("comp/button.png", "+");
+            this.zoomOut.labelSize = this.zoomIn.labelSize = 40;
+            this.zoomIn.on(Laya.Event.CLICK, this, () => {
+                this.zoomscale += 0.2;
+                if (this.zoomscale < 0.01) {
+                    this.zoomscale = 0.01;
+                }
+                if (this.zoomscale > 100) {
+                    this.zoomscale = 100;
+                }
+                this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
+                this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
+            });
+            this.zoomOut.on(Laya.Event.CLICK, this, () => {
+                this.zoomscale -= 0.2;
+                if (this.zoomscale < 0.01) {
+                    this.zoomscale = 0.01;
+                }
+                if (this.zoomscale > 100) {
+                    this.zoomscale = 100;
+                }
+                this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
+                this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
+            });
             this.widthlbl.color = "#ffffff";
             this.heightlbl.color = "#ffffff";
             this.widthText.skin = "comp/textinput.png";
@@ -981,8 +1013,11 @@
                     tm = TilesManager.getinstance(Map.instance.tilesetId);
                     this.bgImage.width = 48 * width;
                     this.bgImage.height = 48 * height;
+                    this.bgImage.anchorX = 0.5;
+                    this.bgImage.anchorY = 0.5;
                     this.bgImage.graphics.clear();
                     this.bgImage.graphics.drawRect(0, 0, this.bgImage.width, this.bgImage.height, "#000000");
+                    this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
                     Laya.timer.loop(100, this, () => {
                         console.log(tm.finished);
                         if (tm.finished == 9) {
@@ -1000,6 +1035,13 @@
             this.combo.y = 200;
             this.combo.width = 130;
             this.combo.height = 30;
+            this.zoomOut.x = 200;
+            this.zoomOut.width = 40;
+            this.zoomlbl.x = 250;
+            this.zoomlbl.autoSize = true;
+            this.zoomlbl.bgColor = "#ffffff";
+            this.zoomIn.x = 300;
+            this.zoomIn.width = 40;
             this.widthText.type = "number";
             this.heightText.type = "number";
             this.widthText.restrict = "0123456789";
@@ -1011,6 +1053,9 @@
             this.addChild(this.heightlbl);
             this.addChild(this.heightText);
             this.addChild(this.combo);
+            this.addChild(this.zoomIn);
+            this.addChild(this.zoomlbl);
+            this.addChild(this.zoomOut);
             console.log(Tilesetsdata);
         }
         onMouseDown(e) {
@@ -1022,24 +1067,32 @@
             Laya.stage.on(Laya.Event.MOUSE_MOVE, this, this.onMouseMove);
         }
         onMouseMove(e) {
-            this.bgImage.x += (Laya.stage.mouseX - this.lastmouseX);
-            this.bgImage.y += (Laya.stage.mouseY - this.lastmouseY);
             if (e.touches && e.touches.length == 2) {
                 let distance = this.getDistance(e.touches);
                 const factor = 0.01;
-                this.bgImage.scaleX *= 1 + (distance - this.lastDistance) * factor;
-                this.bgImage.scaleY *= 1 + (distance - this.lastDistance) * factor;
+                this.zoomscale = (this.zoomscale + (distance - this.lastDistance) * factor);
+                if (this.zoomscale < 0.01) {
+                    this.zoomscale = 0.01;
+                }
+                if (this.zoomscale > 100) {
+                    this.zoomscale = 100;
+                }
+                this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
+                this.bgImage.scaleX = this.zoomscale;
+                this.bgImage.scaleY = this.zoomscale;
                 this.lastDistance = distance;
             }
             else {
-                if (this.bgImage.x > Laya.stage.width / 2)
-                    this.bgImage.x = Laya.stage.width / 2;
-                if (this.bgImage.y > Laya.stage.height / 2)
-                    this.bgImage.y = Laya.stage.height / 2;
-                if (this.bgImage.x < Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX)
-                    this.bgImage.x = Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX;
-                if (this.bgImage.y < Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY)
-                    this.bgImage.y = Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY;
+                this.bgImage.x += (Laya.stage.mouseX - this.lastmouseX);
+                this.bgImage.y += (Laya.stage.mouseY - this.lastmouseY);
+                if (this.bgImage.x > Laya.stage.width / 2 + this.bgImage.width * this.bgImage.scaleX / 2)
+                    this.bgImage.x = Laya.stage.width / 2 + this.bgImage.width * this.bgImage.scaleX / 2;
+                if (this.bgImage.y > Laya.stage.height / 2 + this.bgImage.height * this.bgImage.scaleY / 2)
+                    this.bgImage.y = Laya.stage.height / 2 + this.bgImage.height * this.bgImage.scaleY / 2;
+                if (this.bgImage.x < Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX / 2)
+                    this.bgImage.x = Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX / 2;
+                if (this.bgImage.y < Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY / 2)
+                    this.bgImage.y = Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY / 2;
             }
             this.lastmouseX = Laya.stage.mouseX;
             this.lastmouseY = Laya.stage.mouseY;
