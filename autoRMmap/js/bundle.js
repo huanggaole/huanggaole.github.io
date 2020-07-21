@@ -544,6 +544,11 @@
             this.Base = 1553;
             this.Wall = 6320;
             this.WallTop = 5936;
+            this.Stone1 = 57;
+            this.Stone21 = 65;
+            this.Stone22 = 73;
+            this.WalkableStone = 49;
+            this.WalkableBase = 1625;
             this.widthmargin = 3;
             this.heightmargin = 3;
             this.eightX = [-1, 0, 1, -1, 1, -1, 0, 1];
@@ -581,41 +586,81 @@
                 this.Base = 1552;
                 this.Wall = 6272;
                 this.WallTop = 5888;
+                this.Stone1 = 56;
+                this.Stone21 = 64;
+                this.Stone22 = 72;
+                this.WalkableStone = 48;
+                this.WalkableBase = 1624;
             }
             else if (DungeonGenerator.dungeontype === 1) {
                 this.Base = 1553;
                 this.Wall = 6320;
                 this.WallTop = 5936;
+                this.Stone1 = 57;
+                this.Stone21 = 65;
+                this.Stone22 = 73;
+                this.WalkableStone = 49;
+                this.WalkableBase = 1625;
             }
             else if (DungeonGenerator.dungeontype === 2) {
                 this.Base = 1554;
                 this.Wall = 6368;
                 this.WallTop = 5984;
+                this.Stone1 = 58;
+                this.Stone21 = 66;
+                this.Stone22 = 74;
+                this.WalkableStone = 50;
+                this.WalkableBase = 1626;
             }
             else if (DungeonGenerator.dungeontype === 3) {
                 this.Base = 1555;
                 this.Wall = 6416;
                 this.WallTop = 6032;
+                this.Stone1 = 59;
+                this.Stone21 = 67;
+                this.Stone22 = 75;
+                this.WalkableStone = 51;
+                this.WalkableBase = 1627;
             }
             else if (DungeonGenerator.dungeontype === 4) {
                 this.Base = 1556;
                 this.Wall = 6464;
                 this.WallTop = 6080;
+                this.Stone1 = 60;
+                this.Stone21 = 68;
+                this.Stone22 = 76;
+                this.WalkableStone = 52;
+                this.WalkableBase = 1628;
             }
             else if (DungeonGenerator.dungeontype === 5) {
                 this.Base = 1557;
                 this.Wall = 6512;
                 this.WallTop = 6128;
+                this.Stone1 = 61;
+                this.Stone21 = 69;
+                this.Stone22 = 77;
+                this.WalkableStone = 53;
+                this.WalkableBase = 1629;
             }
             else if (DungeonGenerator.dungeontype === 6) {
                 this.Base = 1558;
                 this.Wall = 6560;
                 this.WallTop = 6176;
+                this.Stone1 = 62;
+                this.Stone21 = 70;
+                this.Stone22 = 78;
+                this.WalkableStone = 54;
+                this.WalkableBase = 1630;
             }
             else if (DungeonGenerator.dungeontype === 7) {
                 this.Base = 1559;
                 this.Wall = 6608;
                 this.WallTop = 6224;
+                this.Stone1 = 63;
+                this.Stone21 = 71;
+                this.Stone22 = 79;
+                this.WalkableStone = 55;
+                this.WalkableBase = 1631;
             }
         }
         initSmallRandomMap() {
@@ -852,6 +897,125 @@
                 }
             }
         }
+        ifcanBarr(lu, u, ru, l, r, ld, d, rd) {
+            const tempt = new Array(9);
+            tempt[0] = lu;
+            tempt[1] = u;
+            tempt[2] = ru;
+            tempt[3] = l;
+            tempt[4] = false;
+            tempt[5] = r;
+            tempt[6] = ld;
+            tempt[7] = d;
+            tempt[8] = rd;
+            let firstbase = 0;
+            for (let i = 0; i < 9; i++) {
+                if (tempt[i] === true) {
+                    firstbase = i;
+                }
+            }
+            const list = [];
+            list.push(firstbase);
+            let listindex = 0;
+            while (listindex < list.length) {
+                const p = list[listindex];
+                listindex++;
+                tempt[p] = false;
+                let x = p % 3;
+                let y = Math.floor(p / 3);
+                for (let k = 0; k < 4; k++) {
+                    const newx = x + this.fourX[k];
+                    const newy = y + this.fourY[k];
+                    if (newx >= 0 && newx < 3 && newy >= 0 && newy < 3) {
+                        if (tempt[newy * 3 + newx] === true) {
+                            list.push(newy * 3 + newx);
+                        }
+                    }
+                }
+            }
+            for (let i = 0; i < 9; i++) {
+                if (tempt[i] === true) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        walkable(x, y) {
+            if (this.data1[y * this.width + x] !== this.Base && this.data1[y * this.width + x] !== this.WalkableBase) {
+                return false;
+            }
+            if (this.data3[y * this.width + x] === this.Stone1 || this.data3[y * this.width + x] === this.Stone22) {
+                return false;
+            }
+            return true;
+        }
+        cleardeco() {
+            for (let i = 0; i < this.height; i++) {
+                for (let j = 0; j < this.width; j++) {
+                    this.data3[i * this.width + j] = 0;
+                    this.data4[i * this.width + j] = 0;
+                    if (this.data1[i * this.width + j] === this.WalkableBase) {
+                        this.data1[i * this.width + j] = this.Base;
+                    }
+                }
+            }
+        }
+        adddeco() {
+            let num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
+            for (let i = 0; i < num / 3; i++) {
+                const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
+                const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
+                if (this.data1[y * this.width + x] === this.Base) {
+                    this.data1[y * this.width + x] = this.WalkableBase;
+                }
+            }
+            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
+            for (let i = 0; i < num; i++) {
+                const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
+                const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
+                if (this.walkable(x, y)) {
+                    const lu = this.walkable(x - 1, y - 1);
+                    const u = this.walkable(x, y - 1);
+                    const ru = this.walkable(x + 1, y - 1);
+                    const l = this.walkable(x - 1, y);
+                    const r = this.walkable(x + 1, y);
+                    const ld = this.walkable(x - 1, y + 1);
+                    const d = this.walkable(x, y + 1);
+                    const rd = this.walkable(x + 1, y + 1);
+                    if (this.ifcanBarr(lu, u, ru, l, r, ld, d, rd)) {
+                        this.data3[y * this.width + x] = this.Stone1;
+                    }
+                }
+            }
+            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
+            for (let i = 0; i < num / 3; i++) {
+                const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
+                const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
+                if (this.walkable(x, y)) {
+                    const lu = this.walkable(x - 1, y - 1);
+                    const u = this.walkable(x, y - 1);
+                    const ru = this.walkable(x + 1, y - 1);
+                    const l = this.walkable(x - 1, y);
+                    const r = this.walkable(x + 1, y);
+                    const ld = this.walkable(x - 1, y + 1);
+                    const d = this.walkable(x, y + 1);
+                    const rd = this.walkable(x + 1, y + 1);
+                    if (this.ifcanBarr(lu, u, ru, l, r, ld, d, rd)) {
+                        this.data3[(y - 1) * this.width + x] = this.Stone21;
+                        this.data3[y * this.width + x] = this.Stone22;
+                    }
+                }
+            }
+            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
+            for (let i = 0; i < num / 3; i++) {
+                const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
+                const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
+                if (this.walkable(x, y)) {
+                    this.data3[y * this.width + x] = this.WalkableStone;
+                }
+            }
+            this.data = this.data1.concat(this.data2.concat(this.data3.concat(this.data4.concat(this.data5.concat(this.data6)))));
+        }
     }
     DungeonGenerator.dungeontype = 0;
 
@@ -861,19 +1025,53 @@
         }
         static genMap(width, height, maptype) {
             let str = "";
-            let map;
             if (maptype === MapType.dungeon) {
-                map = new DungeonGenerator(width, height);
+                MapGenerator.map = new DungeonGenerator(width, height);
                 for (let i = 0; i <= 5; i++) {
                     for (let j = 0; j < width * height; j++) {
                         if (!(i == 0 && j == 0)) {
                             str += ",";
                         }
-                        str += map.data[i * width * height + j].toString();
+                        str += MapGenerator.map.data[i * width * height + j].toString();
                     }
                 }
             }
-            MapGenerator.mapdata = map.data;
+            MapGenerator.mapdata = MapGenerator.map.data;
+            return str;
+        }
+        static cleardeco() {
+            let str = "";
+            MapGenerator.map.cleardeco();
+            MapGenerator.map.data = MapGenerator.map.data1.concat(MapGenerator.map.data2.concat(MapGenerator.map.data3.concat(MapGenerator.map.data4.concat(MapGenerator.map.data5.concat(MapGenerator.map.data6)))));
+            for (let i = 0; i <= 5; i++) {
+                for (let j = 0; j < MapGenerator.map.width * MapGenerator.map.height; j++) {
+                    if (!(i == 0 && j == 0)) {
+                        str += ",";
+                    }
+                    str += MapGenerator.map.data[i * MapGenerator.map.width * MapGenerator.map.height + j].toString();
+                }
+            }
+            MapGenerator.mapdata = MapGenerator.map.data;
+            return str;
+        }
+        static adddeco() {
+            let str = "";
+            for (let i = 0; i < MapGenerator.map.height; i++) {
+                for (let j = 0; j < MapGenerator.map.width; j++) {
+                    MapGenerator.map.data3[i * MapGenerator.map.width + j] = 0;
+                    MapGenerator.map.data4[i * MapGenerator.map.width + j] = 0;
+                }
+            }
+            MapGenerator.map.adddeco();
+            for (let i = 0; i <= 5; i++) {
+                for (let j = 0; j < MapGenerator.map.width * MapGenerator.map.height; j++) {
+                    if (!(i == 0 && j == 0)) {
+                        str += ",";
+                    }
+                    str += MapGenerator.map.data[i * MapGenerator.map.width * MapGenerator.map.height + j].toString();
+                }
+            }
+            MapGenerator.mapdata = MapGenerator.map.data;
             return str;
         }
     }
@@ -907,6 +1105,14 @@
             console.log(this.maptype);
             console.log(this.tilesetId);
             this.mapstr = MapGenerator.genMap(this.width, this.height, this.maptype);
+            this.mapdata = MapGenerator.mapdata;
+        }
+        cleardeco() {
+            this.mapstr = MapGenerator.cleardeco();
+            this.mapdata = MapGenerator.mapdata;
+        }
+        adddeco() {
+            this.mapstr = MapGenerator.adddeco();
             this.mapdata = MapGenerator.mapdata;
         }
     }
@@ -1047,8 +1253,9 @@
             this.dungeoncombo.selectHandler = new Laya.Handler(this, () => {
                 DungeonGenerator.dungeontype = this.dungeoncombo.selectedIndex;
             });
-            this.dungeonBox.addChild(this.dungeoncombo);
             this.dungeonBox.visible = false;
+            this.dungeondecobtn = new Laya.Button("comp/button.png", "生成装饰\nAdd Ornaments");
+            this.dungeoncleardecobtn = new Laya.Button("comp/button.png", "清除装饰\nClear Ornaments");
             this.widthlbl.color = "#ffffff";
             this.heightlbl.color = "#ffffff";
             this.widthText.skin = "comp/textinput.png";
@@ -1062,7 +1269,6 @@
                     saveFile.instance.saveMap(saveFile.instance.tostring(Map.instance), 'application/json', "test");
                 }
             });
-            let tm = this.tilesmanager;
             this.genBtn.on(Laya.Event.CLICK, this, () => {
                 let width, height;
                 width = parseInt(this.widthText.text);
@@ -1077,8 +1283,10 @@
                     alert("请选择有效的地图种类\nPlease select a valid map type");
                 }
                 else {
+                    this.dungeondecobtn.label = "生成装饰\nAdd Ornaments";
+                    this.dungeoncleardecobtn.visible = false;
                     Map.instance.init(width, height, this.combo.selectedIndex);
-                    tm = TilesManager.getinstance(Map.instance.tilesetId);
+                    this.tilesmanager = TilesManager.getinstance(Map.instance.tilesetId);
                     this.bgImage.width = 48 * width;
                     this.bgImage.height = 48 * height;
                     this.bgImage.anchorX = 0.5;
@@ -1087,13 +1295,25 @@
                     this.bgImage.graphics.drawRect(0, 0, this.bgImage.width, this.bgImage.height, "#000000");
                     this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
                     Laya.timer.loop(100, this, () => {
-                        console.log(tm.finished);
-                        if (tm.finished == 9) {
-                            this.DrawMap(tm);
+                        console.log(this.tilesmanager.finished);
+                        if (this.tilesmanager.finished == 9) {
+                            this.DrawMap(this.tilesmanager);
                             Laya.timer.clearAll(this);
+                            this.dungeondecobtn.visible = true;
                         }
                     });
                 }
+            });
+            this.dungeondecobtn.on(Laya.Event.CLICK, this, () => {
+                Map.instance.cleardeco();
+                Map.instance.adddeco();
+                this.DrawMap(this.tilesmanager);
+                this.dungeondecobtn.label = "重新生成装饰\nRefresh Ornaments";
+                this.dungeoncleardecobtn.visible = true;
+            });
+            this.dungeoncleardecobtn.on(Laya.Event.CLICK, this, () => {
+                Map.instance.cleardeco();
+                this.DrawMap(this.tilesmanager);
             });
             this.genBtn.y = 50;
             this.widthlbl.y = 100;
@@ -1111,14 +1331,20 @@
             this.zoomIn.x = 300;
             this.zoomIn.width = 40;
             this.dungeonBox.width = 150;
-            this.dungeonBox.height = 500;
             this.dungeonBox.y = 250;
             this.dungeoncombo.width = 180;
             this.dungeoncombo.height = 30;
+            this.dungeondecobtn.y = 50;
+            this.dungeoncleardecobtn.y = 100;
+            this.dungeondecobtn.visible = false;
+            this.dungeoncleardecobtn.visible = false;
             this.widthText.type = "number";
             this.heightText.type = "number";
             this.widthText.restrict = "0123456789";
             this.heightText.restrict = "0123456789";
+            this.dungeonBox.addChild(this.dungeoncombo);
+            this.dungeonBox.addChild(this.dungeondecobtn);
+            this.dungeonBox.addChild(this.dungeoncleardecobtn);
             this.addChild(this.saveBtn);
             this.addChild(this.genBtn);
             this.addChild(this.widthlbl);
