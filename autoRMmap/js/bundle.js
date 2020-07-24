@@ -1183,7 +1183,7 @@
                     }
                 }
             }
-            let num = MathUtil.random() * Math.floor(topWallList.length / 3);
+            let num = topWallList.length * DungeonGenerator.ornamentsdensity;
             for (let i = 0; i < num / 3; i++) {
                 const rnd = MathUtil.random();
                 let index;
@@ -1226,16 +1226,15 @@
                 }
             }
             console.log(this.data3);
-            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
-            for (let i = 0; i < num / 3; i++) {
+            num = this.width * this.height * DungeonGenerator.ornamentsdensity;
+            for (let i = 0; i < num / 4; i++) {
                 const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
                 const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
                 if (this.data1[y * this.width + x] === this.Base) {
                     this.data1[y * this.width + x] = this.WalkableBase;
                 }
             }
-            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
-            for (let i = 0; i < num; i++) {
+            for (let i = 0; i < num / 4; i++) {
                 const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
                 const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
                 if (this.walkable(x, y)) {
@@ -1262,8 +1261,7 @@
                     }
                 }
             }
-            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
-            for (let i = 0; i < num / 3; i++) {
+            for (let i = 0; i < num / 4; i++) {
                 const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
                 const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
                 if (this.walkable(x, y)) {
@@ -1281,8 +1279,7 @@
                     }
                 }
             }
-            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
-            for (let i = 0; i < num / 3; i++) {
+            for (let i = 0; i < num / 4; i++) {
                 const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
                 const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
                 if (this.walkable(x, y)) {
@@ -1293,10 +1290,12 @@
         }
     }
     DungeonGenerator.dungeontype = 0;
+    DungeonGenerator.ornamentsdensity = 0.3;
 
     var MapType;
     (function (MapType) {
-        MapType[MapType["dungeon"] = 0] = "dungeon";
+        MapType[MapType["world"] = 0] = "world";
+        MapType[MapType["dungeon"] = 1] = "dungeon";
     })(MapType || (MapType = {}));
     class Map {
         constructor() {
@@ -1459,6 +1458,10 @@
         static get instance() {
             if (!BgImage._instance) {
                 BgImage._instance = new BgImage();
+                BgImage._instance.anchorX = 0.5;
+                BgImage._instance.anchorY = 0.5;
+                BgImage._instance.x = Laya.stage.width / 2.0;
+                BgImage._instance.y = Laya.stage.height / 2.0;
             }
             return BgImage._instance;
         }
@@ -1480,8 +1483,10 @@
         reset(width, height) {
             this.width = 48 * width;
             this.height = 48 * height;
-            this.anchorX = 0.5;
-            this.anchorY = 0.5;
+            BgImage._instance.anchorX = 0.5;
+            BgImage._instance.anchorY = 0.5;
+            BgImage._instance.x = Laya.stage.width / 2.0;
+            BgImage._instance.y = Laya.stage.height / 2.0;
             this.graphics.clear();
             this.graphics.drawRect(0, 0, this.width, this.height, "#000000");
         }
@@ -1498,6 +1503,9 @@
                 DungeonGenerator.dungeontype = this.dungeoncombo.selectedIndex;
             });
             this.visible = false;
+            this.ornamentsdensitylbl = new Laya.Label("装饰物密度(ornaments density)");
+            this.ornamentsdensityhslider = new Laya.HSlider("comp/hslider.png");
+            this.density_Info = new Laya.Label("30%");
             this.dungeondecobtn = new Laya.Button("comp/button.png", "生成装饰\nAdd Ornaments");
             this.dungeoncleardecobtn = new Laya.Button("comp/button.png", "清除装饰\nClear Ornaments");
             this.dungeondecobtn.on(Laya.Event.CLICK, this, () => {
@@ -1515,19 +1523,46 @@
             this.y = 250;
             this.dungeoncombo.width = 180;
             this.dungeoncombo.height = 30;
-            this.dungeondecobtn.y = 50;
-            this.dungeoncleardecobtn.y = 100;
+            this.ornamentsdensitylbl.color = "#ffffff";
+            this.ornamentsdensitylbl.y = 50;
+            this.ornamentsdensityhslider.y = 80;
+            this.ornamentsdensityhslider.width = 150;
+            this.ornamentsdensityhslider.min = 0;
+            this.ornamentsdensityhslider.max = 100;
+            this.ornamentsdensityhslider.value = 30;
+            this.ornamentsdensityhslider.bar.size(20, 30);
+            this.ornamentsdensityhslider.changeHandler = new Laya.Handler(this, function (value) {
+                DungeonGenerator.ornamentsdensity = this.ornamentsdensityhslider.value / 100.0;
+                this.density_Info.text = this.ornamentsdensityhslider.value + "%";
+            });
+            this.density_Info.color = "#ffffff";
+            this.density_Info.x = 160;
+            this.density_Info.y = 90;
+            this.dungeondecobtn.y = 150;
+            this.dungeoncleardecobtn.y = 200;
+            this.ornamentsdensitylbl.visible = false;
+            this.ornamentsdensityhslider.visible = false;
+            this.density_Info.visible = false;
             this.dungeondecobtn.visible = false;
             this.dungeoncleardecobtn.visible = false;
+            this.addChild(this.ornamentsdensitylbl);
+            this.addChild(this.ornamentsdensityhslider);
+            this.addChild(this.density_Info);
             this.addChild(this.dungeoncombo);
             this.addChild(this.dungeondecobtn);
             this.addChild(this.dungeoncleardecobtn);
         }
         beforegen() {
             this.dungeondecobtn.label = "生成装饰\nAdd Ornaments";
+            this.ornamentsdensitylbl.visible = false;
+            this.ornamentsdensityhslider.visible = false;
+            this.density_Info.visible = false;
             this.dungeoncleardecobtn.visible = false;
         }
         aftergen() {
+            this.ornamentsdensitylbl.visible = true;
+            this.ornamentsdensityhslider.visible = true;
+            this.density_Info.visible = true;
             this.dungeondecobtn.visible = true;
         }
     }
@@ -1541,7 +1576,7 @@
             this.genBtn = new Laya.Button("comp/button.png", "生成地图\nGenerate map");
             this.widthText = new Laya.TextInput();
             this.heightText = new Laya.TextInput();
-            this.combo = new Laya.ComboBox("comp/combobox.png", "地牢(dungeon)");
+            this.combo = new Laya.ComboBox("comp/combobox.png", "大地图(world),地牢(dungeon)");
             this.combo.itemSize = 15;
             this.widthlbl = new Laya.Label("地图宽度(Map width)");
             this.heightlbl = new Laya.Label("地图高度(Map height)");
@@ -1602,7 +1637,7 @@
                 }
                 else {
                     this.dungeonBox.beforegen();
-                    Map.instance.init(width, height, this.combo.selectedIndex);
+                    Map.instance.init(width, height, Map.instance.maptype);
                     BgImage.instance.reset(width, height);
                     BgImage.instance.setscale(this.zoomscale);
                     Laya.timer.loop(100, this, () => {
@@ -1650,6 +1685,9 @@
             Laya.stage.on(Laya.Event.MOUSE_OUT, this, this.onMouseUp);
         }
         onMouseDown(e) {
+            if (Laya.stage.mouseX < 200) {
+                return;
+            }
             this.lastmouseX = Laya.stage.mouseX;
             this.lastmouseY = Laya.stage.mouseY;
             if (e.touches && e.touches.length == 2) {
@@ -1691,7 +1729,12 @@
             return distance;
         }
         onSelectCombo() {
+            if (this.combo.selectedLabel === "大地图(world)") {
+                Map.instance.maptype = MapType.world;
+                this.dungeonBox.visible = false;
+            }
             if (this.combo.selectedLabel === "地牢(dungeon)") {
+                Map.instance.maptype = MapType.dungeon;
                 this.dungeonBox.visible = true;
             }
         }
