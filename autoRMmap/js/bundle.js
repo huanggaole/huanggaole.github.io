@@ -37,7 +37,8 @@
         { "id": 6, "mode": 1, "name": "近未来内部", "note": "", "tilesetNames": ["Inside_A1", "Inside_A2", "", "SF_Inside_A4", "SF_Outside_A5", "SF_Inside_B", "SF_Inside_C", "", ""] }
     ];
     class TilesManager {
-        static getinstance(index) {
+        static get instance() {
+            const index = Map.instance.tilesetId;
             if (!TilesManager._instance) {
                 TilesManager._instance = new Array(7);
             }
@@ -533,7 +534,7 @@
         }
     }
 
-    class DungeonGenerator {
+    class MapGenerator {
         constructor(width, height) {
             this.data1 = [];
             this.data2 = [];
@@ -541,16 +542,6 @@
             this.data4 = [];
             this.data5 = [];
             this.data6 = [];
-            this.Base = 1553;
-            this.Wall = 6320;
-            this.WallTop = 5936;
-            this.Stone1 = 57;
-            this.Stone21 = 65;
-            this.Stone22 = 73;
-            this.WalkableStone = 49;
-            this.WalkableBase = 1625;
-            this.widthmargin = 3;
-            this.heightmargin = 3;
             this.eightX = [-1, 0, 1, -1, 1, -1, 0, 1];
             this.eightY = [-1, -1, -1, 0, 0, 1, 1, 1];
             this.fourX = [-1, 1, 0, 0];
@@ -567,6 +558,101 @@
                     this.data6.push(0);
                 }
             }
+        }
+        ifWallTileType(type, walltype) {
+            if (type >= walltype && type < walltype + 16) {
+                return true;
+            }
+            return false;
+        }
+        fillFlood(regiontype, regionindex, startX, startY, noteregions) {
+            const list = [];
+            const startP = new Laya.Point(startX, startY);
+            list.push(startP);
+            noteregions[startY * this.width + startX] = regionindex;
+            let listindex = 0;
+            while (listindex < list.length) {
+                const tempP = list[listindex];
+                listindex++;
+                for (let k = 0; k < 4; k++) {
+                    const newP = new Laya.Point(tempP.x + this.fourX[k], tempP.y + this.fourY[k]);
+                    if (this.data1[newP.y * this.width + newP.x] === regiontype && noteregions[newP.y * this.width + newP.x] != regionindex) {
+                        noteregions[newP.y * this.width + newP.x] = regionindex;
+                        list.push(newP);
+                    }
+                }
+            }
+            return list;
+        }
+        ifcanBarr(lu, u, ru, l, r, ld, d, rd) {
+            const tempt = new Array(9);
+            tempt[0] = lu;
+            tempt[1] = u;
+            tempt[2] = ru;
+            tempt[3] = l;
+            tempt[4] = false;
+            tempt[5] = r;
+            tempt[6] = ld;
+            tempt[7] = d;
+            tempt[8] = rd;
+            let firstbase = 0;
+            for (let i = 0; i < 9; i++) {
+                if (tempt[i] === true) {
+                    firstbase = i;
+                }
+            }
+            const list = [];
+            list.push(firstbase);
+            let listindex = 0;
+            while (listindex < list.length) {
+                const p = list[listindex];
+                listindex++;
+                tempt[p] = false;
+                let x = p % 3;
+                let y = Math.floor(p / 3);
+                for (let k = 0; k < 4; k++) {
+                    const newx = x + this.fourX[k];
+                    const newy = y + this.fourY[k];
+                    if (newx >= 0 && newx < 3 && newy >= 0 && newy < 3) {
+                        if (tempt[newy * 3 + newx] === true) {
+                            list.push(newy * 3 + newx);
+                        }
+                    }
+                }
+            }
+            for (let i = 0; i < 9; i++) {
+                if (tempt[i] === true) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    class DungeonGenerator extends MapGenerator {
+        constructor(width, height) {
+            super(width, height);
+            this.Base = 1553;
+            this.Base2 = 3296;
+            this.Wall = 6320;
+            this.WallTop = 5936;
+            this.Stone1 = [];
+            this.prob1 = [];
+            this.Stone21 = 65;
+            this.Stone22 = 73;
+            this.WalkableStone = 49;
+            this.WalkableBase = 1625;
+            this.Hole = 3392;
+            this.Lake = 2528;
+            this.WallDecTop = [];
+            this.probWallTop = [];
+            this.WallDecDown = [];
+            this.probWallDown = [];
+            this.Wall21 = [];
+            this.Wall22 = [];
+            this.probWall2 = [];
+            this.widthmargin = 3;
+            this.heightmargin = 3;
             this.initTilesType();
             if (this.width <= 25 && this.height <= 25) {
                 this.initSmallRandomMap();
@@ -576,91 +662,181 @@
                 this.autoCell();
             }
             this.connectAllBase();
+            this.generateLakeandHole();
             this.generateWall();
             this.fillWallTops();
+            this.generateBase2();
             this.updateAutoTiles();
             this.data = this.data1.concat(this.data2.concat(this.data3.concat(this.data4.concat(this.data5.concat(this.data6)))));
         }
         initTilesType() {
             if (DungeonGenerator.dungeontype === 0) {
                 this.Base = 1552;
+                this.Base2 = 2912;
                 this.Wall = 6272;
                 this.WallTop = 5888;
-                this.Stone1 = 56;
+                this.Stone1 = [56, 108, 9, 242];
+                this.prob1 = [0.0, 0.4, 0.8, 0.9];
                 this.Stone21 = 64;
                 this.Stone22 = 72;
                 this.WalkableStone = 48;
                 this.WalkableBase = 1624;
+                this.Hole = 3008;
+                this.Lake = 2432;
+                this.Wall21 = [153, 0];
+                this.Wall22 = [161, 0];
+                this.probWall2 = [0, 0.1];
+                this.WallDecTop = [144, 0];
+                this.probWallTop = [0, 0.1];
+                this.WallDecDown = [0];
+                this.probWallDown = [0];
             }
             else if (DungeonGenerator.dungeontype === 1) {
                 this.Base = 1553;
+                this.Base2 = 3296;
                 this.Wall = 6320;
                 this.WallTop = 5936;
-                this.Stone1 = 57;
+                this.Stone1 = [57, 104, 167, 242];
+                this.prob1 = [0.0, 0.4, 0.8, 0.9];
                 this.Stone21 = 65;
                 this.Stone22 = 73;
                 this.WalkableStone = 49;
                 this.WalkableBase = 1625;
+                this.Hole = 3392;
+                this.Lake = 2528;
+                this.Wall21 = [152, 153, 154, 0];
+                this.Wall22 = [160, 161, 162, 0];
+                this.probWall2 = [0.0, 0.1, 0.2, 0.3];
+                this.WallDecTop = [155, 144, 165, 0];
+                this.probWallTop = [0.0, 0.1, 0.2, 0.4];
+                this.WallDecDown = [163, 167, 0];
+                this.probWallDown = [0.0, 0.1, 0.3];
             }
             else if (DungeonGenerator.dungeontype === 2) {
                 this.Base = 1554;
+                this.Base2 = 3680;
                 this.Wall = 6368;
                 this.WallTop = 5984;
-                this.Stone1 = 58;
+                this.Stone1 = [58, 242];
+                this.prob1 = [0.0, 0.9];
                 this.Stone21 = 66;
                 this.Stone22 = 74;
                 this.WalkableStone = 50;
                 this.WalkableBase = 1626;
+                this.Hole = 3776;
+                this.Lake = 2240;
+                this.Wall21 = [156, 0];
+                this.Wall22 = [164, 0];
+                this.probWall2 = [0.0, 0.1];
+                this.WallDecTop = [0];
+                this.probWallTop = [0];
+                this.WallDecDown = [0];
+                this.probWallDown = [0];
             }
             else if (DungeonGenerator.dungeontype === 3) {
                 this.Base = 1555;
+                this.Base2 = 4064;
                 this.Wall = 6416;
                 this.WallTop = 6032;
-                this.Stone1 = 59;
+                this.Stone1 = [59, 106];
+                this.prob1 = [0.0, 0.9];
                 this.Stone21 = 67;
                 this.Stone22 = 75;
                 this.WalkableStone = 51;
                 this.WalkableBase = 1627;
+                this.Hole = 3440;
+                this.Lake = 3440;
+                this.Wall21 = [157, 0];
+                this.Wall22 = [165, 0];
+                this.probWall2 = [0.0, 0.1];
+                this.WallDecTop = [166, 0];
+                this.probWallTop = [0, 0.1];
+                this.WallDecDown = [158, 0];
+                this.probWallDown = [0, 0.1];
             }
             else if (DungeonGenerator.dungeontype === 4) {
                 this.Base = 1556;
+                this.Base2 = 2960;
                 this.Wall = 6464;
                 this.WallTop = 6080;
-                this.Stone1 = 60;
+                this.Stone1 = [1, 9, 60, 105, 48, 242];
+                this.prob1 = [0.0, 0.2, 0.4, 0.6, 0.8, 0.9];
                 this.Stone21 = 68;
                 this.Stone22 = 76;
                 this.WalkableStone = 52;
                 this.WalkableBase = 1628;
+                this.Hole = 3056;
+                this.Lake = 2336;
+                this.Wall21 = [152, 154];
+                this.Wall22 = [160, 162];
+                this.probWall2 = [0.0, 0.5];
+                this.WallDecTop = [155, 144];
+                this.probWallTop = [0.0, 0.9];
+                this.WallDecDown = [163, 155];
+                this.probWallDown = [0.0, 0.7];
             }
             else if (DungeonGenerator.dungeontype === 5) {
                 this.Base = 1557;
+                this.Base2 = 3344;
                 this.Wall = 6512;
                 this.WallTop = 6128;
-                this.Stone1 = 61;
+                this.Stone1 = [61];
+                this.prob1 = [0.0];
                 this.Stone21 = 69;
                 this.Stone22 = 77;
                 this.WalkableStone = 53;
                 this.WalkableBase = 1629;
+                this.Hole = 4160;
+                this.Lake = 2624;
+                this.Wall21 = [0];
+                this.Wall22 = [0];
+                this.probWall2 = [0];
+                this.WallDecTop = [0];
+                this.probWallTop = [0];
+                this.WallDecDown = [0];
+                this.probWallDown = [0];
             }
             else if (DungeonGenerator.dungeontype === 6) {
                 this.Base = 1558;
+                this.Base2 = 1558;
                 this.Wall = 6560;
                 this.WallTop = 6176;
-                this.Stone1 = 62;
+                this.Stone1 = [62];
+                this.prob1 = [0.0];
                 this.Stone21 = 70;
                 this.Stone22 = 78;
                 this.WalkableStone = 54;
                 this.WalkableBase = 1630;
+                this.Hole = 3824;
+                this.Lake = 3824;
+                this.Wall21 = [0];
+                this.Wall22 = [0];
+                this.probWall2 = [0];
+                this.WallDecTop = [0];
+                this.probWallTop = [0];
+                this.WallDecDown = [0];
+                this.probWallDown = [0];
             }
             else if (DungeonGenerator.dungeontype === 7) {
                 this.Base = 1559;
+                this.Base2 = 1559;
                 this.Wall = 6608;
                 this.WallTop = 6224;
-                this.Stone1 = 63;
+                this.Stone1 = [63, 62, 61];
+                this.prob1 = [0.0, 0.4, 0.7];
                 this.Stone21 = 71;
                 this.Stone22 = 79;
                 this.WalkableStone = 55;
                 this.WalkableBase = 1631;
+                this.Hole = 4208;
+                this.Lake = 4208;
+                this.Wall21 = [153, 0];
+                this.Wall22 = [161, 0];
+                this.probWall2 = [0, 0.2];
+                this.WallDecTop = [144, 0];
+                this.probWallTop = [0, 0.1];
+                this.WallDecDown = [0];
+                this.probWallDown = [0];
             }
         }
         initSmallRandomMap() {
@@ -718,27 +894,6 @@
                 }
             }
         }
-        fillFlood(regionindex, startX, startY, noteregions) {
-            const region = [];
-            const list = [];
-            list.push(new Laya.Point(startX, startY));
-            noteregions[startY * this.width + startX] = regionindex;
-            let listindex = 0;
-            while (listindex < list.length) {
-                const tempP = list[listindex];
-                listindex++;
-                region.push(tempP);
-                for (let k = 0; k < 4; k++) {
-                    const newP = new Laya.Point(tempP.x + this.fourX[k], tempP.y + this.fourY[k]);
-                    if (this.data1[newP.y * this.width + newP.x] === this.Base && noteregions[newP.y * this.width + newP.x] != regionindex) {
-                        noteregions[newP.y * this.width + newP.x] = regionindex;
-                        list.push(newP);
-                    }
-                }
-            }
-            console.log(region);
-            return region;
-        }
         connectAllBase() {
             const noteregions = new Array(this.height * this.width);
             const regions = [];
@@ -751,14 +906,12 @@
             for (let i = 0; i < this.height; i++) {
                 for (let j = 0; j < this.width; j++) {
                     if (this.data1[i * this.width + j] === this.Base && noteregions[i * this.width + j] === -1) {
-                        const region = this.fillFlood(index, j, i, noteregions);
+                        const region = this.fillFlood(this.Base, index, j, i, noteregions);
                         regions.push(region);
                         index++;
                     }
                 }
             }
-            console.log(noteregions);
-            console.log(regions);
             if (regions.length === 1) {
                 return;
             }
@@ -809,13 +962,48 @@
                 }
             }
         }
+        generateLakeandHole() {
+            const noteregions = new Array(this.height * this.width);
+            const regions = [];
+            for (let i = 0; i < this.height; i++) {
+                for (let j = 0; j < this.width; j++) {
+                    noteregions[i * this.width + j] = -1;
+                }
+            }
+            let index = 0;
+            for (let i = 0; i < this.height; i++) {
+                for (let j = 0; j < this.width; j++) {
+                    if (this.data1[i * this.width + j] === 0 && noteregions[i * this.width + j] === -1) {
+                        const region = this.fillFlood(0, index, j, i, noteregions);
+                        regions.push(region);
+                        index++;
+                    }
+                }
+            }
+            console.log(noteregions);
+            console.log(regions);
+            for (let i = 1; i < regions.length; i++) {
+                if (MathUtil.random() < 0.5) {
+                    if (MathUtil.random() < 0.5) {
+                        for (let j = 0; j < regions[i].length; j++) {
+                            this.data1[regions[i][j].y * this.width + regions[i][j].x] = this.Hole;
+                        }
+                    }
+                    else {
+                        for (let j = 0; j < regions[i].length; j++) {
+                            this.data1[regions[i][j].y * this.width + regions[i][j].x] = this.Lake;
+                        }
+                    }
+                }
+            }
+        }
         generateWall() {
             for (let i = this.height - 2; i > 2; i--) {
                 for (let j = this.width - 2; j > 2; j--) {
-                    if (this.data1[i * this.width + j] === this.Base && this.data1[(i - 2) * this.width + j] === this.Base) {
+                    if ((this.data1[i * this.width + j] === this.Base) && (this.data1[(i - 2) * this.width + j] === this.Base)) {
                         this.data1[(i - 1) * this.width + j] = this.Base;
                     }
-                    if (this.data1[i * this.width + j] === this.Base && this.data1[(i - 3) * this.width + j] === this.Base) {
+                    if ((this.data1[i * this.width + j] === this.Base) && (this.data1[(i - 3) * this.width + j] === this.Base)) {
                         this.data1[(i - 1) * this.width + j] = this.Base;
                         this.data1[(i - 2) * this.width + j] = this.Base;
                     }
@@ -823,7 +1011,7 @@
             }
             for (let i = this.height - 2; i >= 2; i--) {
                 for (let j = this.width - 1; j > 0; j--) {
-                    if (this.data1[i * this.width + j] === this.Base && this.data1[(i - 1) * this.width + j] === 0 && this.data1[(i - 2) * this.width + j] === 0) {
+                    if ((this.data1[i * this.width + j] === this.Base) && this.data1[(i - 1) * this.width + j] === 0 && this.data1[(i - 2) * this.width + j] === 0) {
                         this.data1[(i - 1) * this.width + j] = this.Wall;
                         if (i - 3 >= 0 && this.data1[(i - 3) * this.width + j] === 0) {
                             this.data1[(i - 2) * this.width + j] = this.Wall;
@@ -853,6 +1041,56 @@
                 }
             }
         }
+        renderBase2(x, y, leftnum, upnum, downnum, rightnum) {
+            let adjBase1Num = 0;
+            if (this.data1[y * this.width + x] !== this.Base && this.data1[y * this.width + x] !== this.Base2) {
+                return;
+            }
+            for (let i = 0; i < 8; i++) {
+                let newx = x + this.eightX[i];
+                let newy = y + this.eightY[i];
+                if (this.data1[newy * this.width + newx] === this.Base || this.data1[newy * this.width + newx] === this.Base2) {
+                    adjBase1Num++;
+                }
+            }
+            if (adjBase1Num >= 7) {
+                this.data1[y * this.width + x] = this.Base2;
+                for (let j = 0; j < 4; j++) {
+                    if (j == 0 && leftnum > 0) {
+                        this.renderBase2(x + this.fourX[j], y + this.fourY[j], leftnum - 1, leftnum - 1, leftnum - 1, leftnum - 1);
+                    }
+                    if (j == 1 && upnum > 0) {
+                        this.renderBase2(x + this.fourX[j], y + this.fourY[j], upnum - 1, upnum - 1, upnum - 1, upnum - 1);
+                    }
+                    if (j == 2 && downnum > 0) {
+                        this.renderBase2(x + this.fourX[j], y + this.fourY[j], downnum - 1, downnum - 1, downnum - 1, downnum - 1);
+                    }
+                    if (j == 3 && rightnum > 0) {
+                        this.renderBase2(x + this.fourX[j], y + this.fourY[j], rightnum - 1, rightnum - 1, rightnum - 1, rightnum - 1);
+                    }
+                }
+            }
+        }
+        generateBase2() {
+            if (this.Base2 === this.Base) {
+                return;
+            }
+            const seedNum = Math.floor(MathUtil.random() * Math.sqrt(this.width + this.height));
+            for (let num = 0; num < seedNum; num++) {
+                let x = 1 + Math.floor(MathUtil.random() * this.width - 2);
+                let y = 1 + Math.floor(MathUtil.random() * this.height - 2);
+                if (this.data1[y * this.width + x] === this.Base) {
+                    const leftnum = Math.floor(MathUtil.random() * 5);
+                    const rightnum = Math.floor(MathUtil.random() * 5);
+                    const upnum = Math.floor(MathUtil.random() * 5);
+                    const downnum = Math.floor(MathUtil.random() * 5);
+                    this.renderBase2(x, y, leftnum, upnum, downnum, rightnum);
+                }
+                else {
+                    num--;
+                }
+            }
+        }
         updateAutoTiles() {
             const lastdata = new Array(this.data1.length);
             for (let i = 0; i < this.data1.length; i++) {
@@ -863,31 +1101,40 @@
                 ifupdated = false;
                 for (let i = 1; i < this.height - 1; i++) {
                     for (let j = 1; j < this.width - 1; j++) {
+                        const lu = this.data1[(i - 1) * this.width + j - 1];
+                        const u = this.data1[(i - 1) * this.width + j];
+                        const ru = this.data1[(i - 1) * this.width + j + 1];
+                        const l = this.data1[(i) * this.width + j - 1];
+                        const r = this.data1[(i) * this.width + j + 1];
+                        const ld = this.data1[(i + 1) * this.width + j - 1];
+                        const d = this.data1[(i + 1) * this.width + j];
+                        const rd = this.data1[(i + 1) * this.width + j + 1];
+                        let olddata = this.data1[i * this.width + j];
                         if (lastdata[i * this.width + j] === this.Wall) {
-                            const lu = this.data1[(i - 1) * this.width + j - 1];
-                            const u = this.data1[(i - 1) * this.width + j];
-                            const ru = this.data1[(i - 1) * this.width + j + 1];
-                            const l = this.data1[(i) * this.width + j - 1];
-                            const r = this.data1[(i) * this.width + j + 1];
-                            const ld = this.data1[(i + 1) * this.width + j - 1];
-                            const d = this.data1[(i + 1) * this.width + j];
-                            const rd = this.data1[(i + 1) * this.width + j + 1];
-                            let olddata = this.data1[i * this.width + j];
                             this.data1[i * this.width + j] = TilesManager.updateWall(lastdata[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
                             if (olddata !== this.data1[i * this.width + j]) {
                                 ifupdated = true;
                             }
                         }
+                        if (lastdata[i * this.width + j] === this.Base2 && this.Base2 !== this.Base) {
+                            this.data1[i * this.width + j] = TilesManager.updateFloor(lastdata[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
+                            if (olddata !== this.data1[i * this.width + j]) {
+                                ifupdated = true;
+                            }
+                        }
                         if (lastdata[i * this.width + j] === this.WallTop) {
-                            const lu = this.data1[(i - 1) * this.width + j - 1];
-                            const u = this.data1[(i - 1) * this.width + j];
-                            const ru = this.data1[(i - 1) * this.width + j + 1];
-                            const l = this.data1[(i) * this.width + j - 1];
-                            const r = this.data1[(i) * this.width + j + 1];
-                            const ld = this.data1[(i + 1) * this.width + j - 1];
-                            const d = this.data1[(i + 1) * this.width + j];
-                            const rd = this.data1[(i + 1) * this.width + j + 1];
-                            let olddata = this.data1[i * this.width + j];
+                            this.data1[i * this.width + j] = TilesManager.updateFloor(lastdata[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
+                            if (olddata !== this.data1[i * this.width + j]) {
+                                ifupdated = true;
+                            }
+                        }
+                        if (lastdata[i * this.width + j] === this.Hole) {
+                            this.data1[i * this.width + j] = TilesManager.updateFloor(lastdata[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
+                            if (olddata !== this.data1[i * this.width + j]) {
+                                ifupdated = true;
+                            }
+                        }
+                        if (lastdata[i * this.width + j] === this.Lake) {
                             this.data1[i * this.width + j] = TilesManager.updateFloor(lastdata[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
                             if (olddata !== this.data1[i * this.width + j]) {
                                 ifupdated = true;
@@ -897,55 +1144,17 @@
                 }
             }
         }
-        ifcanBarr(lu, u, ru, l, r, ld, d, rd) {
-            const tempt = new Array(9);
-            tempt[0] = lu;
-            tempt[1] = u;
-            tempt[2] = ru;
-            tempt[3] = l;
-            tempt[4] = false;
-            tempt[5] = r;
-            tempt[6] = ld;
-            tempt[7] = d;
-            tempt[8] = rd;
-            let firstbase = 0;
-            for (let i = 0; i < 9; i++) {
-                if (tempt[i] === true) {
-                    firstbase = i;
-                }
+        walkable(x, y) {
+            if (this.data1[y * this.width + x] !== this.Base && this.data1[y * this.width + x] !== this.Base2 && this.data1[y * this.width + x] !== this.WalkableBase) {
+                return false;
             }
-            const list = [];
-            list.push(firstbase);
-            let listindex = 0;
-            while (listindex < list.length) {
-                const p = list[listindex];
-                listindex++;
-                tempt[p] = false;
-                let x = p % 3;
-                let y = Math.floor(p / 3);
-                for (let k = 0; k < 4; k++) {
-                    const newx = x + this.fourX[k];
-                    const newy = y + this.fourY[k];
-                    if (newx >= 0 && newx < 3 && newy >= 0 && newy < 3) {
-                        if (tempt[newy * 3 + newx] === true) {
-                            list.push(newy * 3 + newx);
-                        }
-                    }
-                }
+            if (this.data3[y * this.width + x] === this.Stone22) {
+                return false;
             }
-            for (let i = 0; i < 9; i++) {
-                if (tempt[i] === true) {
+            for (let i = 0; i < this.Stone1.length; i++) {
+                if (this.data3[y * this.width + x] === this.Stone1[i]) {
                     return false;
                 }
-            }
-            return true;
-        }
-        walkable(x, y) {
-            if (this.data1[y * this.width + x] !== this.Base && this.data1[y * this.width + x] !== this.WalkableBase) {
-                return false;
-            }
-            if (this.data3[y * this.width + x] === this.Stone1 || this.data3[y * this.width + x] === this.Stone22) {
-                return false;
             }
             return true;
         }
@@ -959,9 +1168,65 @@
                     }
                 }
             }
+            this.data = this.data1.concat(this.data2.concat(this.data3.concat(this.data4.concat(this.data5.concat(this.data6)))));
         }
         adddeco() {
-            let num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
+            const topWallList = [];
+            const downWallList = [];
+            for (let i = 1; i < this.height - 1; i++) {
+                for (let j = 1; j < this.width; j++) {
+                    if (this.ifWallTileType(this.data1[i * this.width + j], this.Wall) && !this.ifWallTileType(this.data1[(i - 1) * this.width + j], this.Wall)) {
+                        topWallList.push(new Laya.Point(j, i));
+                    }
+                    if (this.ifWallTileType(this.data1[i * this.width + j], this.Wall) && !this.ifWallTileType(this.data1[(i + 1) * this.width + j], this.Wall)) {
+                        downWallList.push(new Laya.Point(j, i));
+                    }
+                }
+            }
+            let num = MathUtil.random() * Math.floor(topWallList.length / 3);
+            for (let i = 0; i < num / 3; i++) {
+                const rnd = MathUtil.random();
+                let index;
+                for (let j = 0; j < this.probWallTop.length; j++) {
+                    if (rnd > this.probWallTop[j]) {
+                        index = j;
+                    }
+                }
+                let p = topWallList[Math.floor(MathUtil.random() * topWallList.length)];
+                console.log(this.data3[p.y * this.width + p.x]);
+                if (this.data3[p.y * this.width + p.x] === 0) {
+                    this.data3[p.y * this.width + p.x] = this.WallDecTop[index];
+                }
+            }
+            for (let i = 0; i < num / 3; i++) {
+                const rnd = MathUtil.random();
+                let index;
+                for (let j = 0; j < this.probWallDown.length; j++) {
+                    if (rnd > this.probWallDown[j]) {
+                        index = j;
+                    }
+                }
+                let p = downWallList[Math.floor(MathUtil.random() * downWallList.length)];
+                if (this.data3[p.y * this.width + p.x] === 0) {
+                    this.data3[p.y * this.width + p.x] = this.WallDecDown[index];
+                }
+            }
+            for (let i = 0; i < num / 3; i++) {
+                const rnd = MathUtil.random();
+                let index;
+                for (let j = 0; j < this.probWall2.length; j++) {
+                    if (rnd > this.probWall2[j]) {
+                        index = j;
+                    }
+                }
+                let p = topWallList[Math.floor(MathUtil.random() * topWallList.length)];
+                if (this.data3[p.y * this.width + p.x] === 0 && this.data3[p.x, p.y + 1] === 0) {
+                    this.data3[p.y * this.width + p.x] = this.Wall21[index];
+                    this.data3[(p.y + 1) * this.width + p.x] = this.Wall22[index];
+                }
+            }
+            console.log(this.data3);
+            num = this.width > this.height ? this.height : this.width + MathUtil.random() * Math.floor(this.width + this.height);
             for (let i = 0; i < num / 3; i++) {
                 const x = 1 + Math.floor(MathUtil.random() * (this.width - 2));
                 const y = 1 + Math.floor(MathUtil.random() * (this.height - 2));
@@ -983,7 +1248,17 @@
                     const d = this.walkable(x, y + 1);
                     const rd = this.walkable(x + 1, y + 1);
                     if (this.ifcanBarr(lu, u, ru, l, r, ld, d, rd)) {
-                        this.data3[y * this.width + x] = this.Stone1;
+                        const rnd = MathUtil.random();
+                        let stone1index = 0;
+                        for (let i = 0; i < this.prob1.length; i++) {
+                            if (rnd > this.prob1[i]) {
+                                stone1index = i;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+                        this.data3[y * this.width + x] = this.Stone1[stone1index];
                     }
                 }
             }
@@ -1001,7 +1276,7 @@
                     const d = this.walkable(x, y + 1);
                     const rd = this.walkable(x + 1, y + 1);
                     if (this.ifcanBarr(lu, u, ru, l, r, ld, d, rd)) {
-                        this.data3[(y - 1) * this.width + x] = this.Stone21;
+                        this.data4[(y - 1) * this.width + x] = this.Stone21;
                         this.data3[y * this.width + x] = this.Stone22;
                     }
                 }
@@ -1018,64 +1293,6 @@
         }
     }
     DungeonGenerator.dungeontype = 0;
-
-    class MapGenerator {
-        static getTiledSetID(maptype) {
-            return MapGenerator.mapid[maptype];
-        }
-        static genMap(width, height, maptype) {
-            let str = "";
-            if (maptype === MapType.dungeon) {
-                MapGenerator.map = new DungeonGenerator(width, height);
-                for (let i = 0; i <= 5; i++) {
-                    for (let j = 0; j < width * height; j++) {
-                        if (!(i == 0 && j == 0)) {
-                            str += ",";
-                        }
-                        str += MapGenerator.map.data[i * width * height + j].toString();
-                    }
-                }
-            }
-            MapGenerator.mapdata = MapGenerator.map.data;
-            return str;
-        }
-        static cleardeco() {
-            let str = "";
-            MapGenerator.map.cleardeco();
-            MapGenerator.map.data = MapGenerator.map.data1.concat(MapGenerator.map.data2.concat(MapGenerator.map.data3.concat(MapGenerator.map.data4.concat(MapGenerator.map.data5.concat(MapGenerator.map.data6)))));
-            for (let i = 0; i <= 5; i++) {
-                for (let j = 0; j < MapGenerator.map.width * MapGenerator.map.height; j++) {
-                    if (!(i == 0 && j == 0)) {
-                        str += ",";
-                    }
-                    str += MapGenerator.map.data[i * MapGenerator.map.width * MapGenerator.map.height + j].toString();
-                }
-            }
-            MapGenerator.mapdata = MapGenerator.map.data;
-            return str;
-        }
-        static adddeco() {
-            let str = "";
-            for (let i = 0; i < MapGenerator.map.height; i++) {
-                for (let j = 0; j < MapGenerator.map.width; j++) {
-                    MapGenerator.map.data3[i * MapGenerator.map.width + j] = 0;
-                    MapGenerator.map.data4[i * MapGenerator.map.width + j] = 0;
-                }
-            }
-            MapGenerator.map.adddeco();
-            for (let i = 0; i <= 5; i++) {
-                for (let j = 0; j < MapGenerator.map.width * MapGenerator.map.height; j++) {
-                    if (!(i == 0 && j == 0)) {
-                        str += ",";
-                    }
-                    str += MapGenerator.map.data[i * MapGenerator.map.width * MapGenerator.map.height + j].toString();
-                }
-            }
-            MapGenerator.mapdata = MapGenerator.map.data;
-            return str;
-        }
-    }
-    MapGenerator.mapid = [4];
 
     var MapType;
     (function (MapType) {
@@ -1095,25 +1312,65 @@
             }
             return Map._instance;
         }
+        getTiledSetID(type) {
+            let id = 4;
+            if (type === MapType.dungeon) {
+                id = 4;
+            }
+            return id;
+        }
+        genstr() {
+            const width = this.mapgenerator.width;
+            const height = this.mapgenerator.height;
+            let str = "";
+            for (let i = 0; i <= 5; i++) {
+                for (let j = 0; j < width * height; j++) {
+                    if (!(i == 0 && j == 0)) {
+                        str += ",";
+                    }
+                    str += this.mapgenerator.data[i * width * height + j].toString();
+                }
+            }
+            return str;
+        }
         init(width, height, type) {
             this.width = width;
             this.height = height;
             this.maptype = type;
-            this.tilesetId = MapGenerator.getTiledSetID(type);
-            console.log(this.width);
-            console.log(this.height);
-            console.log(this.maptype);
-            console.log(this.tilesetId);
-            this.mapstr = MapGenerator.genMap(this.width, this.height, this.maptype);
-            this.mapdata = MapGenerator.mapdata;
+            this.tilesetId = this.getTiledSetID(type);
+            if (type === MapType.dungeon) {
+                this.mapgenerator = new DungeonGenerator(width, height);
+            }
+            this.mapdata = this.mapgenerator.data;
+            this.mapstr = this.genstr();
+        }
+        DrawMap(tm, bgImage) {
+            const map = Map.instance;
+            const mapwidth = map.width;
+            const mapheight = map.height;
+            for (let index = 0; index < map.mapdata.length; index++) {
+                const layer = Math.floor(index / (mapwidth * mapheight));
+                const loc = index % (mapwidth * mapheight);
+                const rowindex = Math.floor(loc / mapwidth);
+                const colindex = loc % mapwidth;
+                const type = map.mapdata[index];
+                if (layer < 4) {
+                    if (type > 0 && type < 8192) {
+                        bgImage.graphics.drawImage(tm.tiletextures[type], colindex * 48, rowindex * 48, 48, 48);
+                    }
+                }
+            }
         }
         cleardeco() {
-            this.mapstr = MapGenerator.cleardeco();
-            this.mapdata = MapGenerator.mapdata;
+            this.mapgenerator.cleardeco();
+            this.mapstr = this.genstr();
+            this.mapdata = this.mapgenerator.data;
         }
         adddeco() {
-            this.mapstr = MapGenerator.adddeco();
-            this.mapdata = MapGenerator.mapdata;
+            this.mapgenerator.cleardeco();
+            this.mapgenerator.adddeco();
+            this.mapstr = this.genstr();
+            this.mapdata = this.mapgenerator.data;
         }
     }
 
@@ -1198,17 +1455,88 @@
         }
     }
 
-    class MainScene extends Laya.Scene {
+    class BgImage extends Laya.Image {
+        static get instance() {
+            if (!BgImage._instance) {
+                BgImage._instance = new BgImage();
+            }
+            return BgImage._instance;
+        }
+        setscale(scale) {
+            this.scaleX = this.scaleY = scale;
+        }
+        Move(delx, dely) {
+            this.x += delx;
+            this.y += dely;
+            if (this.x > Laya.stage.width / 2 + this.width * this.scaleX / 2)
+                this.x = Laya.stage.width / 2 + this.width * this.scaleX / 2;
+            if (this.y > Laya.stage.height / 2 + this.height * this.scaleY / 2)
+                this.y = Laya.stage.height / 2 + this.height * this.scaleY / 2;
+            if (this.x < Laya.stage.width / 2 - this.width * this.scaleX / 2)
+                this.x = Laya.stage.width / 2 - this.width * this.scaleX / 2;
+            if (this.y < Laya.stage.height / 2 - this.height * this.scaleY / 2)
+                this.y = Laya.stage.height / 2 - this.height * this.scaleY / 2;
+        }
+        reset(width, height) {
+            this.width = 48 * width;
+            this.height = 48 * height;
+            this.anchorX = 0.5;
+            this.anchorY = 0.5;
+            this.graphics.clear();
+            this.graphics.drawRect(0, 0, this.width, this.height, "#000000");
+        }
+    }
+
+    class DungeonBox extends Laya.Box {
         constructor() {
             super();
+            this.dungeoncombo = new Laya.ComboBox("comp/combobox.png", "土洞穴(Dirt Cave),岩洞窟(Rock Cave),溶岩洞窟(Lava Cave),冰洞窟(Ice Cave),草迷宮(Grass Maze),水晶(Crystal),体内(In Body),魔界(Demonic World)");
+            this.dungeoncombo.scrollBarSkin = "comp/vscroll.png";
+            this.dungeoncombo.selectedIndex = 0;
+            this.dungeoncombo.itemSize = 15;
+            this.dungeoncombo.selectHandler = new Laya.Handler(this, () => {
+                DungeonGenerator.dungeontype = this.dungeoncombo.selectedIndex;
+            });
+            this.visible = false;
+            this.dungeondecobtn = new Laya.Button("comp/button.png", "生成装饰\nAdd Ornaments");
+            this.dungeoncleardecobtn = new Laya.Button("comp/button.png", "清除装饰\nClear Ornaments");
+            this.dungeondecobtn.on(Laya.Event.CLICK, this, () => {
+                Map.instance.cleardeco();
+                Map.instance.adddeco();
+                Map.instance.DrawMap(TilesManager.instance, BgImage.instance);
+                this.dungeondecobtn.label = "重新生成装饰\nRefresh Ornaments";
+                this.dungeoncleardecobtn.visible = true;
+            });
+            this.dungeoncleardecobtn.on(Laya.Event.CLICK, this, () => {
+                Map.instance.cleardeco();
+                Map.instance.DrawMap(TilesManager.instance, BgImage.instance);
+            });
+            this.width = 150;
+            this.y = 250;
+            this.dungeoncombo.width = 180;
+            this.dungeoncombo.height = 30;
+            this.dungeondecobtn.y = 50;
+            this.dungeoncleardecobtn.y = 100;
+            this.dungeondecobtn.visible = false;
+            this.dungeoncleardecobtn.visible = false;
+            this.addChild(this.dungeoncombo);
+            this.addChild(this.dungeondecobtn);
+            this.addChild(this.dungeoncleardecobtn);
+        }
+        beforegen() {
+            this.dungeondecobtn.label = "生成装饰\nAdd Ornaments";
+            this.dungeoncleardecobtn.visible = false;
+        }
+        aftergen() {
+            this.dungeondecobtn.visible = true;
+        }
+    }
+
+    class MainUI {
+        constructor(scene) {
             this.zoomscale = 1.0;
-            this.width = Laya.stage.width = window.innerWidth;
-            this.height = Laya.stage.height = window.innerHeight;
-            this.bgImage = new Laya.Image();
-            Laya.stage.on(Laya.Event.MOUSE_DOWN, this, this.onMouseDown);
-            Laya.stage.on(Laya.Event.MOUSE_UP, this, this.onMouseUp);
-            Laya.stage.on(Laya.Event.MOUSE_OUT, this, this.onMouseUp);
-            this.addChild(this.bgImage);
+            const width = scene.width;
+            const height = scene.height;
             this.saveBtn = new Laya.Button("comp/button.png", "保存地图\nSave map");
             this.genBtn = new Laya.Button("comp/button.png", "生成地图\nGenerate map");
             this.widthText = new Laya.TextInput();
@@ -1231,7 +1559,7 @@
                 if (this.zoomscale > 100) {
                     this.zoomscale = 100;
                 }
-                this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
+                BgImage.instance.setscale(this.zoomscale);
                 this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
             });
             this.zoomOut.on(Laya.Event.CLICK, this, () => {
@@ -1242,25 +1570,15 @@
                 if (this.zoomscale > 100) {
                     this.zoomscale = 100;
                 }
-                this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
+                BgImage.instance.setscale(this.zoomscale);
                 this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
             });
-            this.dungeonBox = new Laya.Box();
-            this.dungeoncombo = new Laya.ComboBox("comp/combobox.png", "土洞穴(Dirt Cave),岩洞窟(Rock Cave),溶岩洞窟(Lava Cave),冰洞窟(Ice Cave),草迷宮(Grass Maze),水晶(Crystal),体内(In Body),魔界(Demonic World)");
-            this.dungeoncombo.scrollBarSkin = "comp/vscroll.png";
-            this.dungeoncombo.selectedIndex = 0;
-            this.dungeoncombo.itemSize = 15;
-            this.dungeoncombo.selectHandler = new Laya.Handler(this, () => {
-                DungeonGenerator.dungeontype = this.dungeoncombo.selectedIndex;
-            });
-            this.dungeonBox.visible = false;
-            this.dungeondecobtn = new Laya.Button("comp/button.png", "生成装饰\nAdd Ornaments");
-            this.dungeoncleardecobtn = new Laya.Button("comp/button.png", "清除装饰\nClear Ornaments");
             this.widthlbl.color = "#ffffff";
             this.heightlbl.color = "#ffffff";
             this.widthText.skin = "comp/textinput.png";
             this.heightText.skin = "comp/textinput.png";
             this.combo.selectHandler = new Laya.Handler(this, this.onSelectCombo);
+            this.dungeonBox = new DungeonBox();
             this.saveBtn.on(Laya.Event.CLICK, this, () => {
                 if (Map.instance.mapstr === "") {
                     alert("首先，请生成地图。\nPlease generate a map first.");
@@ -1283,38 +1601,23 @@
                     alert("请选择有效的地图种类\nPlease select a valid map type");
                 }
                 else {
-                    this.dungeondecobtn.label = "生成装饰\nAdd Ornaments";
-                    this.dungeoncleardecobtn.visible = false;
+                    this.dungeonBox.beforegen();
                     Map.instance.init(width, height, this.combo.selectedIndex);
-                    this.tilesmanager = TilesManager.getinstance(Map.instance.tilesetId);
-                    this.bgImage.width = 48 * width;
-                    this.bgImage.height = 48 * height;
-                    this.bgImage.anchorX = 0.5;
-                    this.bgImage.anchorY = 0.5;
-                    this.bgImage.graphics.clear();
-                    this.bgImage.graphics.drawRect(0, 0, this.bgImage.width, this.bgImage.height, "#000000");
-                    this.bgImage.scaleX = this.bgImage.scaleY = this.zoomscale;
+                    BgImage.instance.reset(width, height);
+                    BgImage.instance.setscale(this.zoomscale);
                     Laya.timer.loop(100, this, () => {
-                        console.log(this.tilesmanager.finished);
-                        if (this.tilesmanager.finished == 9) {
-                            this.DrawMap(this.tilesmanager);
+                        if (TilesManager.instance.finished == 9) {
+                            Map.instance.DrawMap(TilesManager.instance, BgImage.instance);
                             Laya.timer.clearAll(this);
-                            this.dungeondecobtn.visible = true;
+                            this.dungeonBox.aftergen();
                         }
                     });
                 }
             });
-            this.dungeondecobtn.on(Laya.Event.CLICK, this, () => {
-                Map.instance.cleardeco();
-                Map.instance.adddeco();
-                this.DrawMap(this.tilesmanager);
-                this.dungeondecobtn.label = "重新生成装饰\nRefresh Ornaments";
-                this.dungeoncleardecobtn.visible = true;
-            });
-            this.dungeoncleardecobtn.on(Laya.Event.CLICK, this, () => {
-                Map.instance.cleardeco();
-                this.DrawMap(this.tilesmanager);
-            });
+            this.widthText.type = "number";
+            this.heightText.type = "number";
+            this.widthText.restrict = "0123456789";
+            this.heightText.restrict = "0123456789";
             this.genBtn.y = 50;
             this.widthlbl.y = 100;
             this.heightlbl.y = 150;
@@ -1330,33 +1633,21 @@
             this.zoomlbl.bgColor = "#ffffff";
             this.zoomIn.x = 300;
             this.zoomIn.width = 40;
-            this.dungeonBox.width = 150;
-            this.dungeonBox.y = 250;
-            this.dungeoncombo.width = 180;
-            this.dungeoncombo.height = 30;
-            this.dungeondecobtn.y = 50;
-            this.dungeoncleardecobtn.y = 100;
-            this.dungeondecobtn.visible = false;
-            this.dungeoncleardecobtn.visible = false;
-            this.widthText.type = "number";
-            this.heightText.type = "number";
-            this.widthText.restrict = "0123456789";
-            this.heightText.restrict = "0123456789";
-            this.dungeonBox.addChild(this.dungeoncombo);
-            this.dungeonBox.addChild(this.dungeondecobtn);
-            this.dungeonBox.addChild(this.dungeoncleardecobtn);
-            this.addChild(this.saveBtn);
-            this.addChild(this.genBtn);
-            this.addChild(this.widthlbl);
-            this.addChild(this.widthText);
-            this.addChild(this.heightlbl);
-            this.addChild(this.heightText);
-            this.addChild(this.combo);
-            this.addChild(this.dungeonBox);
-            this.addChild(this.zoomIn);
-            this.addChild(this.zoomlbl);
-            this.addChild(this.zoomOut);
-            console.log(Tilesetsdata);
+            scene.addChild(BgImage.instance);
+            scene.addChild(this.saveBtn);
+            scene.addChild(this.genBtn);
+            scene.addChild(this.widthlbl);
+            scene.addChild(this.widthText);
+            scene.addChild(this.heightlbl);
+            scene.addChild(this.heightText);
+            scene.addChild(this.combo);
+            scene.addChild(this.dungeonBox);
+            scene.addChild(this.zoomIn);
+            scene.addChild(this.zoomlbl);
+            scene.addChild(this.zoomOut);
+            Laya.stage.on(Laya.Event.MOUSE_DOWN, this, this.onMouseDown);
+            Laya.stage.on(Laya.Event.MOUSE_UP, this, this.onMouseUp);
+            Laya.stage.on(Laya.Event.MOUSE_OUT, this, this.onMouseUp);
         }
         onMouseDown(e) {
             this.lastmouseX = Laya.stage.mouseX;
@@ -1378,21 +1669,11 @@
                     this.zoomscale = 100;
                 }
                 this.zoomlbl.text = (Math.round(this.zoomscale * 100).toString() + "%");
-                this.bgImage.scaleX = this.zoomscale;
-                this.bgImage.scaleY = this.zoomscale;
+                BgImage.instance.setscale(this.zoomscale);
                 this.lastDistance = distance;
             }
             else {
-                this.bgImage.x += (Laya.stage.mouseX - this.lastmouseX);
-                this.bgImage.y += (Laya.stage.mouseY - this.lastmouseY);
-                if (this.bgImage.x > Laya.stage.width / 2 + this.bgImage.width * this.bgImage.scaleX / 2)
-                    this.bgImage.x = Laya.stage.width / 2 + this.bgImage.width * this.bgImage.scaleX / 2;
-                if (this.bgImage.y > Laya.stage.height / 2 + this.bgImage.height * this.bgImage.scaleY / 2)
-                    this.bgImage.y = Laya.stage.height / 2 + this.bgImage.height * this.bgImage.scaleY / 2;
-                if (this.bgImage.x < Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX / 2)
-                    this.bgImage.x = Laya.stage.width / 2 - this.bgImage.width * this.bgImage.scaleX / 2;
-                if (this.bgImage.y < Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY / 2)
-                    this.bgImage.y = Laya.stage.height / 2 - this.bgImage.height * this.bgImage.scaleY / 2;
+                BgImage.instance.Move((Laya.stage.mouseX - this.lastmouseX), (Laya.stage.mouseY - this.lastmouseY));
             }
             this.lastmouseX = Laya.stage.mouseX;
             this.lastmouseY = Laya.stage.mouseY;
@@ -1409,27 +1690,19 @@
             }
             return distance;
         }
-        DrawMap(tm) {
-            const map = Map.instance;
-            const mapwidth = map.width;
-            const mapheight = map.height;
-            for (let index = 0; index < map.mapdata.length; index++) {
-                const layer = Math.floor(index / (mapwidth * mapheight));
-                const loc = index % (mapwidth * mapheight);
-                const rowindex = Math.floor(loc / mapwidth);
-                const colindex = loc % mapwidth;
-                const type = map.mapdata[index];
-                if (layer < 4) {
-                    if (type > 0 && type < 8192) {
-                        this.bgImage.graphics.drawImage(tm.tiletextures[type], colindex * 48, rowindex * 48, 48, 48);
-                    }
-                }
-            }
-        }
         onSelectCombo() {
             if (this.combo.selectedLabel === "地牢(dungeon)") {
                 this.dungeonBox.visible = true;
             }
+        }
+    }
+
+    class MainScene extends Laya.Scene {
+        constructor() {
+            super();
+            this.width = Laya.stage.width = window.innerWidth;
+            this.height = Laya.stage.height = window.innerHeight;
+            this.mainui = new MainUI(this);
         }
     }
 
