@@ -271,7 +271,7 @@
             this.tiletextures[startindex + 42] = this.mergeTiles(inputTexture, 8, 11, 16, 19);
             this.tiletextures[startindex + 43] = this.mergeTiles(inputTexture, 8, 10, 20, 22);
             this.tiletextures[startindex + 44] = this.mergeTiles(inputTexture, 12, 15, 20, 23);
-            this.tiletextures[startindex + 45] = this.mergeTiles(inputTexture, 9, 11, 6, 15);
+            this.tiletextures[startindex + 45] = this.mergeTiles(inputTexture, 9, 11, 22, 23);
             this.tiletextures[startindex + 46] = this.mergeTiles(inputTexture, 0, 1, 4, 5);
             this.tiletextures[startindex + 47] = this.mergeTiles(inputTexture, 0, 1, 4, 5);
         }
@@ -626,6 +626,20 @@
                 }
             }
             return true;
+        }
+        ifadjAll(j, i, index) {
+            const lu = this.data1[(i - 1) * this.width + j - 1];
+            const u = this.data1[(i - 1) * this.width + j];
+            const ru = this.data1[(i - 1) * this.width + j + 1];
+            const l = this.data1[(i) * this.width + j - 1];
+            const r = this.data1[(i) * this.width + j + 1];
+            const ld = this.data1[(i + 1) * this.width + j - 1];
+            const d = this.data1[(i + 1) * this.width + j];
+            const rd = this.data1[(i + 1) * this.width + j + 1];
+            if (lu === index && u === index && ru === index && l === index && r === index && ld === index && d === index && rd === index) {
+                return true;
+            }
+            return false;
         }
     }
 
@@ -1292,6 +1306,453 @@
     DungeonGenerator.dungeontype = 0;
     DungeonGenerator.ornamentsdensity = 0.3;
 
+    class Grad {
+        constructor(x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        dot2(x, y) {
+            return this.x * x + this.y * y;
+        }
+        ;
+        dot3(x, y, z) {
+            return this.x * x + this.y * y + this.z * z;
+        }
+        ;
+    }
+    class PerlinNoise {
+        constructor() {
+            this.grad3 = [new Grad(1, 1, 0), new Grad(-1, 1, 0), new Grad(1, -1, 0), new Grad(-1, -1, 0),
+                new Grad(1, 0, 1), new Grad(-1, 0, 1), new Grad(1, 0, -1), new Grad(-1, 0, -1),
+                new Grad(0, 1, 1), new Grad(0, -1, 1), new Grad(0, 1, -1), new Grad(0, -1, -1)];
+            this.p = [151, 160, 137, 91, 90, 15,
+                131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23,
+                190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33,
+                88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166,
+                77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244,
+                102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196,
+                135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123,
+                5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42,
+                223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+                129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
+                251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
+                49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
+                138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180];
+            this.perm = new Array(512);
+            this.gradP = new Array(512);
+            this.F2 = 0.5 * (Math.sqrt(3) - 1);
+            this.G2 = (3 - Math.sqrt(3)) / 6;
+            this.F3 = 1 / 3;
+            this.G3 = 1 / 6;
+            this.seed(0);
+        }
+        seed(seed) {
+            if (seed > 0 && seed < 1) {
+                seed *= 65536;
+            }
+            seed = Math.floor(seed);
+            if (seed < 256) {
+                seed |= seed << 8;
+            }
+            for (var i = 0; i < 256; i++) {
+                var v;
+                if (i & 1) {
+                    v = this.p[i] ^ (seed & 255);
+                }
+                else {
+                    v = this.p[i] ^ ((seed >> 8) & 255);
+                }
+                this.perm[i] = this.perm[i + 256] = v;
+                this.gradP[i] = this.gradP[i + 256] = this.grad3[v % 12];
+            }
+        }
+        ;
+        simplex2(xin, yin) {
+            var n0, n1, n2;
+            var s = (xin + yin) * this.F2;
+            var i = Math.floor(xin + s);
+            var j = Math.floor(yin + s);
+            var t = (i + j) * this.G2;
+            var x0 = xin - i + t;
+            var y0 = yin - j + t;
+            var i1, j1;
+            if (x0 > y0) {
+                i1 = 1;
+                j1 = 0;
+            }
+            else {
+                i1 = 0;
+                j1 = 1;
+            }
+            var x1 = x0 - i1 + this.G2;
+            var y1 = y0 - j1 + this.G2;
+            var x2 = x0 - 1 + 2 * this.G2;
+            var y2 = y0 - 1 + 2 * this.G2;
+            i &= 255;
+            j &= 255;
+            var gi0 = this.gradP[i + this.perm[j]];
+            var gi1 = this.gradP[i + i1 + this.perm[j + j1]];
+            var gi2 = this.gradP[i + 1 + this.perm[j + 1]];
+            var t0 = 0.5 - x0 * x0 - y0 * y0;
+            if (t0 < 0) {
+                n0 = 0;
+            }
+            else {
+                t0 *= t0;
+                n0 = t0 * t0 * gi0.dot2(x0, y0);
+            }
+            var t1 = 0.5 - x1 * x1 - y1 * y1;
+            if (t1 < 0) {
+                n1 = 0;
+            }
+            else {
+                t1 *= t1;
+                n1 = t1 * t1 * gi1.dot2(x1, y1);
+            }
+            var t2 = 0.5 - x2 * x2 - y2 * y2;
+            if (t2 < 0) {
+                n2 = 0;
+            }
+            else {
+                t2 *= t2;
+                n2 = t2 * t2 * gi2.dot2(x2, y2);
+            }
+            return 70 * (n0 + n1 + n2);
+        }
+        ;
+        simplex3(xin, yin, zin) {
+            var n0, n1, n2, n3;
+            var s = (xin + yin + zin) * this.F3;
+            var i = Math.floor(xin + s);
+            var j = Math.floor(yin + s);
+            var k = Math.floor(zin + s);
+            var t = (i + j + k) * this.G3;
+            var x0 = xin - i + t;
+            var y0 = yin - j + t;
+            var z0 = zin - k + t;
+            var i1, j1, k1;
+            var i2, j2, k2;
+            if (x0 >= y0) {
+                if (y0 >= z0) {
+                    i1 = 1;
+                    j1 = 0;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 1;
+                    k2 = 0;
+                }
+                else if (x0 >= z0) {
+                    i1 = 1;
+                    j1 = 0;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 0;
+                    k2 = 1;
+                }
+                else {
+                    i1 = 0;
+                    j1 = 0;
+                    k1 = 1;
+                    i2 = 1;
+                    j2 = 0;
+                    k2 = 1;
+                }
+            }
+            else {
+                if (y0 < z0) {
+                    i1 = 0;
+                    j1 = 0;
+                    k1 = 1;
+                    i2 = 0;
+                    j2 = 1;
+                    k2 = 1;
+                }
+                else if (x0 < z0) {
+                    i1 = 0;
+                    j1 = 1;
+                    k1 = 0;
+                    i2 = 0;
+                    j2 = 1;
+                    k2 = 1;
+                }
+                else {
+                    i1 = 0;
+                    j1 = 1;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 1;
+                    k2 = 0;
+                }
+            }
+            var x1 = x0 - i1 + this.G3;
+            var y1 = y0 - j1 + this.G3;
+            var z1 = z0 - k1 + this.G3;
+            var x2 = x0 - i2 + 2 * this.G3;
+            var y2 = y0 - j2 + 2 * this.G3;
+            var z2 = z0 - k2 + 2 * this.G3;
+            var x3 = x0 - 1 + 3 * this.G3;
+            var y3 = y0 - 1 + 3 * this.G3;
+            var z3 = z0 - 1 + 3 * this.G3;
+            i &= 255;
+            j &= 255;
+            k &= 255;
+            var gi0 = this.gradP[i + this.perm[j + this.perm[k]]];
+            var gi1 = this.gradP[i + i1 + this.perm[j + j1 + this.perm[k + k1]]];
+            var gi2 = this.gradP[i + i2 + this.perm[j + j2 + this.perm[k + k2]]];
+            var gi3 = this.gradP[i + 1 + this.perm[j + 1 + this.perm[k + 1]]];
+            var t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+            if (t0 < 0) {
+                n0 = 0;
+            }
+            else {
+                t0 *= t0;
+                n0 = t0 * t0 * gi0.dot3(x0, y0, z0);
+            }
+            var t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+            if (t1 < 0) {
+                n1 = 0;
+            }
+            else {
+                t1 *= t1;
+                n1 = t1 * t1 * gi1.dot3(x1, y1, z1);
+            }
+            var t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+            if (t2 < 0) {
+                n2 = 0;
+            }
+            else {
+                t2 *= t2;
+                n2 = t2 * t2 * gi2.dot3(x2, y2, z2);
+            }
+            var t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+            if (t3 < 0) {
+                n3 = 0;
+            }
+            else {
+                t3 *= t3;
+                n3 = t3 * t3 * gi3.dot3(x3, y3, z3);
+            }
+            return 32 * (n0 + n1 + n2 + n3);
+        }
+        ;
+        fade(t) {
+            return t * t * t * (t * (t * 6 - 15) + 10);
+        }
+        lerp(a, b, t) {
+            return (1 - t) * a + t * b;
+        }
+        perlin2(x, y) {
+            var X = Math.floor(x), Y = Math.floor(y);
+            x = x - X;
+            y = y - Y;
+            X = X & 255;
+            Y = Y & 255;
+            var n00 = this.gradP[X + this.perm[Y]].dot2(x, y);
+            var n01 = this.gradP[X + this.perm[Y + 1]].dot2(x, y - 1);
+            var n10 = this.gradP[X + 1 + this.perm[Y]].dot2(x - 1, y);
+            var n11 = this.gradP[X + 1 + this.perm[Y + 1]].dot2(x - 1, y - 1);
+            var u = this.fade(x);
+            return this.lerp(this.lerp(n00, n10, u), this.lerp(n01, n11, u), this.fade(y));
+        }
+        ;
+        perlin3(x, y, z) {
+            var X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
+            x = x - X;
+            y = y - Y;
+            z = z - Z;
+            X = X & 255;
+            Y = Y & 255;
+            Z = Z & 255;
+            var n000 = this.gradP[X + this.perm[Y + this.perm[Z]]].dot3(x, y, z);
+            var n001 = this.gradP[X + this.perm[Y + this.perm[Z + 1]]].dot3(x, y, z - 1);
+            var n010 = this.gradP[X + this.perm[Y + 1 + this.perm[Z]]].dot3(x, y - 1, z);
+            var n011 = this.gradP[X + this.perm[Y + 1 + this.perm[Z + 1]]].dot3(x, y - 1, z - 1);
+            var n100 = this.gradP[X + 1 + this.perm[Y + this.perm[Z]]].dot3(x - 1, y, z);
+            var n101 = this.gradP[X + 1 + this.perm[Y + this.perm[Z + 1]]].dot3(x - 1, y, z - 1);
+            var n110 = this.gradP[X + 1 + this.perm[Y + 1 + this.perm[Z]]].dot3(x - 1, y - 1, z);
+            var n111 = this.gradP[X + 1 + this.perm[Y + 1 + this.perm[Z + 1]]].dot3(x - 1, y - 1, z - 1);
+            var u = this.fade(x);
+            var v = this.fade(y);
+            var w = this.fade(z);
+            return this.lerp(this.lerp(this.lerp(n000, n100, u), this.lerp(n001, n101, u), w), this.lerp(this.lerp(n010, n110, u), this.lerp(n011, n111, u), w), v);
+        }
+        ;
+    }
+
+    class Noise {
+        constructor() {
+            this.rndOffsetX = Math.floor(MathUtil.random() * 200000 - 100000);
+            this.rndOffsetY = Math.floor(MathUtil.random() * 200000 - 100000);
+        }
+        invlerp(a, b, v) {
+            return (v - a) / (b - a);
+        }
+        GenerateNoiseMap(mapWidth, mapHeight, seed, scale, octaves, persistance, lacunarity, offset) {
+            const noiseMap = new Array(mapWidth * mapHeight);
+            this.perlinnoise = new PerlinNoise();
+            this.perlinnoise.seed(seed);
+            const octaveOffsets = new Array(octaves);
+            for (let i = 0; i < octaves; i++) {
+                const offsetX = this.rndOffsetX + offset.x;
+                const offsetY = this.rndOffsetY + offset.y;
+                octaveOffsets[i] = new Laya.Point(offsetX, offsetY);
+            }
+            if (scale <= 0) {
+                scale = 0.0001;
+            }
+            let maxNoiseHeight = -100000;
+            let minNoiseHeight = 100000;
+            let halfWidth = mapWidth / 2;
+            let halfHeight = mapHeight / 2;
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    let amplitude = 1;
+                    let frequency = 1;
+                    let noiseHeight = 0;
+                    for (let i = 0; i < octaves; i++) {
+                        const sampleX = (x - halfWidth) / scale * frequency + octaveOffsets[i].x;
+                        const sampleY = (y - halfHeight) / scale * frequency + octaveOffsets[i].y;
+                        const perlinValue = this.perlinnoise.perlin2(sampleX, sampleY);
+                        noiseMap[y * mapWidth + x] = perlinValue;
+                        noiseHeight += perlinValue * amplitude;
+                        amplitude *= persistance;
+                        frequency *= lacunarity;
+                    }
+                    if (noiseHeight > maxNoiseHeight) {
+                        maxNoiseHeight = noiseHeight;
+                    }
+                    else if (noiseHeight < minNoiseHeight) {
+                        minNoiseHeight = noiseHeight;
+                    }
+                    noiseMap[y * mapWidth + x] = noiseHeight;
+                }
+            }
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    noiseMap[y * mapWidth + x] = this.invlerp(minNoiseHeight, maxNoiseHeight, noiseMap[y * mapWidth + x]);
+                }
+            }
+            return noiseMap;
+        }
+    }
+
+    class WorldGenerator extends MapGenerator {
+        constructor(width, height) {
+            super(width, height);
+            this.ShallowOcean = 2048;
+            this.DeepOcean = 2096;
+            this.Grass = 2816;
+            this.Grass2 = 2864;
+            this.WastLand = 3200;
+            this.Desert = 3584;
+            this.Snow = 3968;
+            this.noise = new Noise();
+            this.seed = (new Date()).getTime();
+            this.offset = new Laya.Point(0, 0);
+            this.generateMapfromBerlinNoise();
+        }
+        updateAutoTiles() {
+            const lastdata1 = new Array(this.data1.length);
+            const lastdata2 = new Array(this.data1.length);
+            for (let i = 0; i < this.data1.length; i++) {
+                lastdata1[i] = this.data1[i];
+                lastdata2[i] = this.data2[i];
+            }
+            let ifupdated = true;
+            while (ifupdated) {
+                ifupdated = false;
+                for (let i = 0; i < this.height; i++) {
+                    for (let j = 0; j < this.width; j++) {
+                        let im1 = i - 1 >= 0 ? i - 1 : i;
+                        let ip1 = i + 1 < this.width ? i + 1 : i;
+                        let jm1 = j - 1 >= 0 ? j - 1 : j;
+                        let jp1 = j + 1 < this.height ? j + 1 : j;
+                        let lu = this.data1[(im1) * this.width + jm1];
+                        let u = this.data1[(im1) * this.width + j];
+                        let ru = this.data1[(im1) * this.width + jp1];
+                        let l = this.data1[(i) * this.width + jm1];
+                        let r = this.data1[(i) * this.width + jp1];
+                        let ld = this.data1[(ip1) * this.width + jm1];
+                        let d = this.data1[(ip1) * this.width + j];
+                        let rd = this.data1[(ip1) * this.width + jp1];
+                        let olddata = this.data1[i * this.width + j];
+                        if (lastdata1[i * this.width + j] === this.ShallowOcean ||
+                            lastdata1[i * this.width + j] === this.Desert ||
+                            lastdata1[i * this.width + j] === this.Grass ||
+                            lastdata1[i * this.width + j] === this.Snow ||
+                            lastdata1[i * this.width + j] === this.WastLand) {
+                            this.data1[i * this.width + j] = TilesManager.updateFloor(lastdata1[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
+                            if (olddata !== this.data1[i * this.width + j]) {
+                                ifupdated = true;
+                            }
+                        }
+                        lu = this.data2[(im1) * this.width + jm1];
+                        u = this.data2[(im1) * this.width + j];
+                        ru = this.data2[(im1) * this.width + jp1];
+                        l = this.data2[(i) * this.width + jm1];
+                        r = this.data2[(i) * this.width + jp1];
+                        ld = this.data2[(ip1) * this.width + jm1];
+                        d = this.data2[(ip1) * this.width + j];
+                        rd = this.data2[(ip1) * this.width + jp1];
+                        olddata = this.data2[i * this.width + j];
+                        if (lastdata2[i * this.width + j] === this.Grass2 ||
+                            lastdata2[i * this.width + j] === this.DeepOcean) {
+                            this.data2[i * this.width + j] = TilesManager.updateFloor(lastdata2[i * this.width + j], lu, u, ru, l, r, ld, d, rd);
+                            if (olddata !== this.data2[i * this.width + j]) {
+                                ifupdated = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        generateMapfromBerlinNoise() {
+            const octaves = 20;
+            const persistance = 0.5;
+            const lacunarity = 2;
+            let scalewidth = this.width / 100.0;
+            let scaleheight = this.height / 100.0;
+            let pn = this.noise.GenerateNoiseMap(this.width, this.height, this.seed, (110 - WorldGenerator.islandRate) * Math.sqrt(scalewidth * scaleheight), octaves, persistance, lacunarity, this.offset);
+            const tilethreshold = (1 - WorldGenerator.oceanRate / 100.0) / 5.0;
+            for (let i = 0; i < pn.length; i++) {
+                if (pn[i] < WorldGenerator.oceanRate / 100.0) {
+                    this.data1[i] = this.ShallowOcean;
+                }
+                else if (pn[i] < WorldGenerator.oceanRate / 100.0 + tilethreshold) {
+                    this.data1[i] = this.Desert;
+                }
+                else if (pn[i] < WorldGenerator.oceanRate / 100.0 + tilethreshold * 2) {
+                    this.data1[i] = this.Grass;
+                }
+                else if (pn[i] < WorldGenerator.oceanRate / 100.0 + tilethreshold * 3) {
+                    this.data1[i] = this.Grass;
+                }
+                else if (pn[i] < WorldGenerator.oceanRate / 100.0 + tilethreshold * 4) {
+                    this.data1[i] = this.WastLand;
+                }
+                else {
+                    this.data1[i] = this.Snow;
+                }
+            }
+            for (let i = 0; i < this.width; i++) {
+                for (let j = 0; j < this.height; j++) {
+                    if (this.data1[j * this.width + i] === 0) {
+                        this.data1[j * this.width + i] = this.ShallowOcean;
+                    }
+                }
+            }
+            this.updateAutoTiles();
+            this.data = this.data1.concat(this.data2.concat(this.data3.concat(this.data4.concat(this.data5.concat(this.data6)))));
+        }
+        adddeco() {
+        }
+        cleardeco() {
+        }
+    }
+    WorldGenerator.islandRate = 25;
+    WorldGenerator.oceanRate = 70;
+
     var MapType;
     (function (MapType) {
         MapType[MapType["world"] = 0] = "world";
@@ -1313,6 +1774,9 @@
         }
         getTiledSetID(type) {
             let id = 4;
+            if (type === MapType.world) {
+                id = 1;
+            }
             if (type === MapType.dungeon) {
                 id = 4;
             }
@@ -1337,6 +1801,9 @@
             this.height = height;
             this.maptype = type;
             this.tilesetId = this.getTiledSetID(type);
+            if (type === MapType.world) {
+                this.mapgenerator = new WorldGenerator(width, height);
+            }
             if (type === MapType.dungeon) {
                 this.mapgenerator = new DungeonGenerator(width, height);
             }
@@ -1567,6 +2034,57 @@
         }
     }
 
+    class WorldBox extends Laya.Box {
+        constructor() {
+            super();
+            this.visible = false;
+            this.width = 150;
+            this.y = 250;
+            this.Islandlbl = new Laya.Label("大陆(Mainlands)/岛屿(Islands)");
+            this.Islandlbl.color = "#ffffff";
+            this.Islandslider = new Laya.HSlider("comp/hslider.png");
+            this.Island_Info = new Laya.Label(WorldGenerator.islandRate + "%");
+            this.Island_Info.color = "#ffffff";
+            this.Islandslider.width = 150;
+            this.Islandslider.min = 0;
+            this.Islandslider.max = 100;
+            this.Islandslider.value = WorldGenerator.islandRate;
+            this.Islandslider.bar.size(20, 30);
+            this.Islandslider.changeHandler = new Laya.Handler(this, function (value) {
+                WorldGenerator.islandRate = this.Islandslider.value;
+                this.Island_Info.text = this.Islandslider.value + "%";
+            });
+            this.Smoothlbl = new Laya.Label("水体占比(Proportion of water body)");
+            this.Smoothlbl.color = "#ffffff";
+            this.Smoothslider = new Laya.HSlider("comp/hslider.png");
+            this.Smooth_Info = new Laya.Label(WorldGenerator.oceanRate + "%");
+            this.Smooth_Info.color = "#ffffff";
+            this.Smoothslider.width = 150;
+            this.Smoothslider.min = 0;
+            this.Smoothslider.max = 100;
+            this.Smoothslider.value = WorldGenerator.oceanRate;
+            this.Smoothslider.bar.size(20, 30);
+            this.Smoothslider.changeHandler = new Laya.Handler(this, function (value) {
+                WorldGenerator.oceanRate = this.Smoothslider.value;
+                this.Smooth_Info.text = this.Smoothslider.value + "%";
+            });
+            this.Islandlbl.y = 0;
+            this.Islandslider.y = 30;
+            this.Smoothlbl.y = 80;
+            this.Island_Info.x = 160;
+            this.Island_Info.y = 40;
+            this.Smoothslider.y = 110;
+            this.Smooth_Info.x = 160;
+            this.Smooth_Info.y = 120;
+            this.addChild(this.Islandlbl);
+            this.addChild(this.Islandslider);
+            this.addChild(this.Island_Info);
+            this.addChild(this.Smoothlbl);
+            this.addChild(this.Smoothslider);
+            this.addChild(this.Smooth_Info);
+        }
+    }
+
     class MainUI {
         constructor(scene) {
             this.zoomscale = 1.0;
@@ -1614,6 +2132,7 @@
             this.heightText.skin = "comp/textinput.png";
             this.combo.selectHandler = new Laya.Handler(this, this.onSelectCombo);
             this.dungeonBox = new DungeonBox();
+            this.worldBox = new WorldBox();
             this.saveBtn.on(Laya.Event.CLICK, this, () => {
                 if (Map.instance.mapstr === "") {
                     alert("首先，请生成地图。\nPlease generate a map first.");
@@ -1677,6 +2196,7 @@
             scene.addChild(this.heightText);
             scene.addChild(this.combo);
             scene.addChild(this.dungeonBox);
+            scene.addChild(this.worldBox);
             scene.addChild(this.zoomIn);
             scene.addChild(this.zoomlbl);
             scene.addChild(this.zoomOut);
@@ -1731,10 +2251,12 @@
         onSelectCombo() {
             if (this.combo.selectedLabel === "大地图(world)") {
                 Map.instance.maptype = MapType.world;
+                this.worldBox.visible = true;
                 this.dungeonBox.visible = false;
             }
             if (this.combo.selectedLabel === "地牢(dungeon)") {
                 Map.instance.maptype = MapType.dungeon;
+                this.worldBox.visible = false;
                 this.dungeonBox.visible = true;
             }
         }
