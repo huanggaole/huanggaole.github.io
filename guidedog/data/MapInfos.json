@@ -1,0 +1,11 @@
+[
+null,
+{"id":1,"expanded":true,"name":"开始界面","order":1,"parentId":0,"scrollX":451,"scrollY":323.5},
+{"id":2,"expanded":false,"name":"游戏内核","order":6,"parentId":0,"scrollX":451,"scrollY":443.5},
+{"id":3,"expanded":false,"name":"大连导盲犬训练基地","order":2,"parentId":1,"scrollX":451,"scrollY":323.5},
+{"id":4,"expanded":false,"name":"办公室内","order":3,"parentId":1,"scrollX":451,"scrollY":323.5},
+{"id":5,"expanded":true,"name":"新手教程","order":7,"parentId":0,"scrollX":451,"scrollY":488.5},
+{"id":6,"expanded":false,"name":"见见独白","order":4,"parentId":1,"scrollX":451,"scrollY":323.5},
+{"id":7,"expanded":false,"name":"犬舍","order":5,"parentId":1,"scrollX":451,"scrollY":631.5},
+{"id":8,"expanded":false,"name":"手指上划","order":8,"parentId":5,"scrollX":451,"scrollY":488.5}
+]

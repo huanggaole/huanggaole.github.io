@@ -1,0 +1,1 @@
+{"type":"Scene","props":{"width":1080,"height":640},"compId":2,"child":[{"type":"Button","props":{"y":320,"x":424,"width":232,"var":"startBtn","skin":"comp/button.png","sizeGrid":"11,11,11,11","labelSize":40,"label":"Start Game","height":62},"compId":3}],"loadList":["comp/button.png"],"loadList3D":[]}

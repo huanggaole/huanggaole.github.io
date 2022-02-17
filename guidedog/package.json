@@ -1,0 +1,12 @@
+{
+    "name": "rmmz-game",
+    "main": "index.html",
+    "chromium-args": "--force-color-profile=srgb",
+    "window": {
+        "title": "导盲犬的一生",
+        "width": 540,
+        "height": 960,
+        "position": "center",
+        "icon": "icon/icon.png"
+    }
+}
