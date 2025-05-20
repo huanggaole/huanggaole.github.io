@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI生成推箱子关卡</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #game-container {
+            position: relative;
+            border: 2px solid #333;
+        }
+
+        #game-canvas {
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        button {
+            margin: 0 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        #error-message {
+            display: none;
+            color: red;
+            font-weight: bold;
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid red;
+            background-color: #ffe6e6;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        #loading-message {
+            color: #333;
+            font-weight: bold;
+            margin: 20px;
+            padding: 10px;
+        }
+
+        #ai-info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .ai-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            margin-left: 5px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AI生成推箱子关卡</h1>
+
+    <div id="error-message"></div>
+    <div id="loading-message">正在加载游戏资源...</div>
+
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button onclick="resetLevel()" id="reset-btn">重置关卡</button>
+        <button onclick="generateNewLevel()" id="new-level-btn">新关卡</button>
+        <button onclick="undoMove()" id="undo-btn">撤销</button>
+        <button onclick="aiDemonstration()" id="ai-demo-btn">AI求解</button>
+    </div>
+
+    <div id="ai-info"></div>
+
+    <div class="instructions">
+        <p>使用方向键或WASD键移动玩家，将所有箱子推到目标点上即可完成关卡。</p>
+        <p>按Z键或回退键可以撤销上一步。</p>
+        <p><span class="ai-badge">AI</span> 关卡由AI算法自动生成，保证有解且具有一定难度。</p>
+    </div>
+
+    <!-- 创建js目录以存放模块文件 -->
+    <script>
+        // 确保js目录结构存在
+        async function createJsDirectory() {
+            try {
+                const response = await fetch('js/');
+                if (!response.ok && response.status === 404) {
+                    console.warn('js目录不存在，请确保创建了js目录并包含所有模块文件');
+                }
+            } catch (error) {
+                console.warn('无法检查js目录:', error);
+            }
+        }
+
+        // 当页面DOM加载完成后
+        document.addEventListener('DOMContentLoaded', function () {
+            // 这个函数将在DOM完全加载后被调用，但图片和脚本可能还在加载中
+            console.log('DOM已加载，准备加载游戏脚本');
+
+            // 检查js目录
+            createJsDirectory();
+
+            // 加载游戏脚本
+            var gameScript = document.createElement('script');
+            gameScript.src = 'game.js';
+            gameScript.type = 'module';  // 使用ES6模块
+
+            gameScript.onerror = function () {
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = '游戏脚本加载失败！请检查网络连接并刷新页面。';
+                document.getElementById('loading-message').style.display = 'none';
+            };
+
+            gameScript.onload = function () {
+                console.log('游戏脚本加载完成');
+            };
+
+            document.body.appendChild(gameScript);
+
+            // 监听AI关卡生成信息事件
+            window.addEventListener('ai-level-generated', function (e) {
+                const aiInfo = document.getElementById('ai-info');
+                if (aiInfo && e.detail) {
+                    aiInfo.textContent = `AI关卡信息: 箱子最少推动次数 ${e.detail.minSteps}, 生成迭代次数 ${e.detail.iterations}, 墙壁数量 ${e.detail.wallCount || '未知'}`;
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
