@@ -3,87 +3,107 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI生成推箱子关卡</title>
     <style>
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start;
+            min-height: 100vh;
             margin: 0;
+            padding: 10px;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
 
         h1 {
             color: #333;
-            margin-bottom: 20px;
+            margin: 10px 0;
+            font-size: 1.5em;
+            text-align: center;
         }
 
         #game-container {
             position: relative;
             border: 2px solid #333;
+            max-width: 100%;
+            max-height: 70vh;
+            margin: 10px auto;
         }
 
         #game-canvas {
             display: block;
+            max-width: 100%;
+            height: auto;
         }
 
         .controls {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
             width: 100%;
+            max-width: 400px;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         button {
-            margin: 0 10px;
-            padding: 8px 16px;
+            padding: 12px 16px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            min-width: 100px;
+            font-size: 16px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        button:hover {
+        button:active {
             background-color: #45a049;
+            transform: scale(0.98);
         }
 
         .instructions {
-            margin-top: 20px;
-            max-width: 600px;
+            margin: 10px;
+            max-width: 100%;
             text-align: center;
+            font-size: 0.9em;
+            padding: 0 10px;
         }
 
         #error-message {
             display: none;
             color: red;
             font-weight: bold;
-            margin: 20px;
+            margin: 10px;
             padding: 10px;
             border: 1px solid red;
             background-color: #ffe6e6;
-            max-width: 600px;
+            max-width: 100%;
             text-align: center;
+            box-sizing: border-box;
         }
 
         #loading-message {
             color: #333;
             font-weight: bold;
-            margin: 20px;
+            margin: 10px;
             padding: 10px;
+            text-align: center;
         }
 
         #ai-info {
-            margin-top: 10px;
+            margin: 10px;
             color: #666;
-            font-size: 0.9em;
+            font-size: 0.85em;
+            text-align: center;
+            padding: 0 10px;
         }
 
         .ai-badge {
@@ -95,6 +115,501 @@
             margin-left: 5px;
             font-size: 0.8em;
         }
+
+        /* 触摸控制区域样式 */
+        #touch-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 180px;
+            z-index: 1000;
+        }
+
+        .touch-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .touch-btn:active {
+            opacity: 1;
+            transform: scale(0.95);
+        }
+
+        #touch-up {
+            top: 0;
+            left: 60px;
+            background-image: url('img/w.png');
+        }
+
+        #touch-down {
+            bottom: 0;
+            left: 60px;
+            background-image: url('img/s.png');
+        }
+
+        #touch-left {
+            top: 60px;
+            left: 0;
+            background-image: url('img/a.png');
+        }
+
+        #touch-right {
+            top: 60px;
+            right: 0;
+            background-image: url('img/d.png');
+        }
+
+        /* 语言切换按钮样式 */
+        #language-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(52, 152, 219, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 0;
+            z-index: 1000;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        #language-btn:active {
+            background-color: rgba(41, 128, 185, 0.9);
+            transform: scale(0.95);
+        }
+
+        /* 设置模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1001;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-content {
+            background-color: #f8f8f8;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            min-height: auto;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 15px;
+            position: sticky;
+            top: 0;
+            background-color: #f8f8f8;
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #777;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .close-btn:hover,
+        .close-btn:active {
+            color: #333;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .setting-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-input {
+            flex: 1;
+            height: 40px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .range-input::-webkit-slider-track {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+        }
+
+        .range-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .range-input::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            border: none;
+        }
+
+        .range-input::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .range-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1em;
+            color: #333;
+            background-color: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            margin-top: 25px;
+            position: sticky;
+            bottom: 0;
+            background-color: #f8f8f8;
+            flex-wrap: wrap;
+        }
+
+        .btn-save {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 120px;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-save:hover,
+        .btn-save:active {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .btn-reset {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 120px;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-reset:hover,
+        .btn-reset:active {
+            background-color: #d32f2f;
+            transform: translateY(-1px);
+        }
+
+        /* 移动设备优化 */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 2% auto;
+                padding: 15px;
+                width: 95%;
+                max-height: 95vh;
+            }
+
+            .modal-header h2 {
+                font-size: 1.3em;
+            }
+
+            .setting-group {
+                margin-bottom: 20px;
+                padding: 12px;
+            }
+
+            .setting-label {
+                font-size: 1em;
+                margin-bottom: 6px;
+            }
+
+            .setting-description {
+                font-size: 0.85em;
+            }
+
+            .range-input {
+                height: 44px;
+            }
+
+            .range-input::-webkit-slider-thumb {
+                height: 28px;
+                width: 28px;
+            }
+
+            .range-input::-moz-range-thumb {
+                height: 28px;
+                width: 28px;
+            }
+
+            .range-value {
+                min-width: 70px;
+                padding: 10px 14px;
+            }
+
+            .btn-save,
+            .btn-reset {
+                padding: 16px 20px;
+                font-size: 16px;
+                min-width: 140px;
+            }
+
+            .modal-footer {
+                padding-top: 25px;
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #touch-controls {
+                display: block;
+            }
+
+            .instructions p:first-child {
+                display: none;
+            }
+
+            body {
+                padding-bottom: 220px;
+            }
+
+            .modal-content {
+                margin: 1% auto;
+                padding: 12px;
+                width: 98%;
+                border-radius: 8px;
+            }
+
+            .modal-header {
+                margin-bottom: 15px;
+                padding-bottom: 12px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.2em;
+            }
+
+            .close-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 24px;
+            }
+
+            .setting-group {
+                margin-bottom: 18px;
+                padding: 10px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 12px;
+                padding-top: 20px;
+            }
+
+            .btn-save,
+            .btn-reset {
+                width: 100%;
+                min-width: auto;
+                padding: 18px 20px;
+                font-size: 17px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.2em;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            .controls {
+                gap: 5px;
+            }
+
+            .modal-content {
+                padding: 10px;
+            }
+
+            .setting-group {
+                padding: 8px;
+                margin-bottom: 15px;
+            }
+
+            .setting-label {
+                font-size: 0.95em;
+            }
+
+            .setting-description {
+                font-size: 0.8em;
+            }
+
+            .range-container {
+                gap: 8px;
+            }
+
+            .range-value {
+                min-width: 60px;
+                padding: 8px 10px;
+                font-size: 0.9em;
+            }
+        }
+
+        /* 触摸设备特殊优化 */
+        @media (hover: none) and (pointer: coarse) {
+            .range-input {
+                height: 48px;
+            }
+
+            .range-input::-webkit-slider-thumb {
+                height: 32px;
+                width: 32px;
+            }
+
+            .range-input::-moz-range-thumb {
+                height: 32px;
+                width: 32px;
+            }
+
+            .close-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .btn-save,
+            .btn-reset {
+                min-height: 48px;
+            }
+        }
     </style>
 </head>
 
@@ -103,6 +618,9 @@
 
     <div id="error-message"></div>
     <div id="loading-message">正在加载游戏资源...</div>
+
+    <!-- 语言切换按钮 -->
+    <button id="language-btn" onclick="toggleLanguage()">中/EN</button>
 
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
@@ -113,6 +631,10 @@
         <button onclick="generateNewLevel()" id="new-level-btn">新关卡</button>
         <button onclick="undoMove()" id="undo-btn">撤销</button>
         <button onclick="aiDemonstration()" id="ai-demo-btn">AI求解</button>
+        <button onclick="saveLevel()" id="save-level-btn">存储关卡</button>
+        <button onclick="loadLevel()" id="load-level-btn">加载关卡</button>
+        <button onclick="buildLevel()" id="build-level-btn">搭建关卡</button>
+        <button onclick="openSettings()" id="settings-btn">设置</button>
     </div>
 
     <div id="ai-info"></div>
@@ -121,6 +643,91 @@
         <p>使用方向键或WASD键移动玩家，将所有箱子推到目标点上即可完成关卡。</p>
         <p>按Z键或回退键可以撤销上一步。</p>
         <p><span class="ai-badge">AI</span> 关卡由AI算法自动生成，保证有解且具有一定难度。</p>
+    </div>
+
+    <!-- 触摸控制区域 -->
+    <div id="touch-controls">
+        <div class="touch-btn" id="touch-up"></div>
+        <div class="touch-btn" id="touch-down"></div>
+        <div class="touch-btn" id="touch-left"></div>
+        <div class="touch-btn" id="touch-right"></div>
+    </div>
+
+    <!-- 设置模态框 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>游戏设置 <span style="font-size: 0.7em; color: #4CAF50; font-weight: normal;">(v3.0 智能算法)</span></h2>
+                <span class="close-btn" onclick="closeSettings()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <div class="setting-label">关卡尺寸</div>
+                    <div class="setting-item">
+                        <div class="range-container">
+                            <input type="range" id="board-size-range" class="range-input setting-input" min="6" max="11"
+                                step="1" value="10">
+                            <span id="board-size-value" class="range-value">10×10</span>
+                        </div>
+                        <div class="setting-description">设置关卡的宽度和高度（6×6到11×11），重置默认时会根据此尺寸加载对应的推荐参数</div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">AI生成参数 <span style="font-size: 0.8em; color: #666;">- 多维度质量评估 +
+                            智能分布算法</span></div>
+                    <div class="setting-item">
+                        <div class="setting-label">最大生成迭代次数</div>
+                        <div class="range-container">
+                            <input type="range" id="max-tries-range" class="range-input setting-input" min="10"
+                                max="500" step="10" value="100">
+                            <span id="max-tries-value" class="range-value">100</span>
+                        </div>
+                        <div class="setting-description">设置AI生成关卡的最大尝试次数（10-500），越大生成的关卡平均来说可能更难</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">求解器最大迭代次数</div>
+                        <div class="range-container">
+                            <input type="range" id="max-iterations-range" class="range-input setting-input" min="5000"
+                                max="200000" step="5000" value="15000">
+                            <span id="max-iterations-value" class="range-value">15000</span>
+                        </div>
+                        <div class="setting-description">设置求解器的最大迭代次数（5000-200000），更高值可解决更复杂关卡但耗时更长</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">求解器最大内存节点数</div>
+                        <div class="range-container">
+                            <input type="range" id="max-nodes-range" class="range-input setting-input" min="10000"
+                                max="500000" step="10000" value="30000">
+                            <span id="max-nodes-value" class="range-value">30000</span>
+                        </div>
+                        <div class="setting-description">设置求解器的最大内存节点数（10000-500000），更高值允许更深搜索但占用更多内存</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">智能墙壁生成触发概率</div>
+                        <div class="range-container">
+                            <input type="range" id="wall-prob-range" class="range-input setting-input" min="0.15"
+                                max="0.45" step="0.01" value="0.32">
+                            <span id="wall-prob-value" class="range-value">0.32</span>
+                        </div>
+                        <div class="setting-description">触发策略性墙壁放置的概率（0.15-0.45），结合通道连通性分析，越高关卡结构越复杂</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">智能箱子生成触发概率</div>
+                        <div class="range-container">
+                            <input type="range" id="box-prob-range" class="range-input setting-input" min="0.15"
+                                max="0.35" step="0.01" value="0.22">
+                            <span id="box-prob-value" class="range-value">0.22</span>
+                        </div>
+                        <div class="setting-description">触发箱子/目标生成的概率（0.15-0.35），结合空间分布优化，影响关卡难度和平衡性</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-reset" onclick="resetSettings()" title="根据当前地图尺寸重置为推荐的默认参数">重置默认</button>
+                <button class="btn-save" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
     </div>
 
     <!-- 创建js目录以存放模块文件 -->
@@ -166,7 +773,17 @@
             window.addEventListener('ai-level-generated', function (e) {
                 const aiInfo = document.getElementById('ai-info');
                 if (aiInfo && e.detail) {
-                    aiInfo.textContent = `AI关卡信息: 箱子最少推动次数 ${e.detail.minSteps}, 生成迭代次数 ${e.detail.iterations}, 墙壁数量 ${e.detail.wallCount || '未知'}`;
+                    // 使用多语言支持显示AI关卡信息
+                    if (window.getText) {  // 确保getText函数已加载
+                        aiInfo.textContent = window.getText('aiLevelInfo', {
+                            minSteps: e.detail.minSteps,
+                            iterations: e.detail.iterations,
+                            wallCount: e.detail.wallCount || window.getText('unknownValue')
+                        });
+                    } else {
+                        // 备用方案，使用原始字符串
+                        aiInfo.textContent = `AI关卡信息: 箱子最少推动次数 ${e.detail.minSteps}, 生成迭代次数 ${e.detail.iterations}, 墙壁数量 ${e.detail.wallCount || '未知'}`;
+                    }
                 }
             });
         });
