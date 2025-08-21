@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月如续传</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 主菜单 -->
+        <div id="main-menu" class="scene active">
+            <div class="menu-content">
+                <h1>月如续传</h1>
+                <p class="music-hint">🎵 点击任意按钮开始播放背景音乐</p>
+                <div class="menu-buttons">
+                    <button id="new-game-btn" class="menu-btn">开始游戏</button>
+                    <button id="continue-game-btn" class="menu-btn">继续游戏</button>
+                    <button id="exit-game-btn" class="menu-btn">退出游戏</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 情节场景 -->
+        <div id="story-scene" class="scene">
+            <div class="story-content">
+                <div id="story-text" class="story-text"></div>
+                <div id="story-character" class="character-portrait"></div>
+                <div class="story-controls">
+                    <button id="story-next-btn" class="control-btn">继续</button>
+                    <button id="story-skip-btn" class="control-btn">跳过</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 地图场景 -->
+        <div id="map-scene" class="scene">
+            <div class="map-content">
+                <div id="map-background" class="map-background">
+                    <div class="map-locations">
+                        <button class="location-btn" data-location="town" style="top: 60%; left: 30%;">城镇</button>
+                        <button class="location-btn" data-location="forest" style="top: 40%; left: 60%;">森林</button>
+                        <button class="location-btn" data-location="dungeon" style="top: 20%; left: 80%;">地牢</button>
+                    </div>
+                    <div class="map-npcs">
+                        <button class="npc-btn" data-npc="merchant" style="top: 70%; left: 35%;">商人</button>
+                        <button class="npc-btn" data-npc="guard" style="top: 55%; left: 25%;">守卫</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+
+        <!-- 对话框 -->
+        <div id="dialog-box" class="dialog-box hidden">
+            <div class="dialog-content">
+                <div id="dialog-speaker" class="dialog-speaker"></div>
+                <div id="dialog-text" class="dialog-text"></div>
+                <div class="dialog-controls">
+                    <button id="dialog-next-btn" class="dialog-btn">继续</button>
+                    <button id="dialog-close-btn" class="dialog-btn">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏UI -->
+        <div id="game-ui" class="game-ui hidden">
+            <div class="ui-top">
+                <div class="ui-left">
+                    <span class="map-name-display" id="current-map-name">地图</span>
+                </div>
+                <div class="ui-right">
+                    <button id="save-btn" class="ui-btn">保存</button>
+                    <button id="load-btn" class="ui-btn">加载</button>
+                    <button id="music-btn" class="ui-btn">音乐</button>
+                    <button id="party-btn" class="ui-btn">队伍</button>
+                    <button id="main-menu-btn" class="ui-btn">主菜单</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结束页面 -->
+        <div id="end-scene" class="scene hidden">
+            <div class="end-container">
+                <div class="end-title">未完待续</div>
+                <div class="end-buttons">
+                    <button class="end-btn" onclick="game.returnToMainMenu()">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏配置文件 -->
+    <script src="config/GameConfig.js"></script>
+    <script src="config/StoryConfig.js"></script>
+    <script src="config/MapConfig.js"></script>
+
+    <!-- 地图配置文件 -->
+    <script src="config/maps/ghost_shushan/MapConfig.js"></script>
+    <script src="config/maps/ghost_shushan2/MapConfig.js"></script>
+    <script src="config/maps/ghost_gate/MapConfig.js"></script>
+    <script src="config/maps/ghost_naihe/MapConfig.js"></script>
+    <script src="config/maps/shuzhong/MapConfig.js"></script>
+    <script src="config/maps/youdu/MapConfig.js"></script>
+    <script src="config/maps/world/MapConfig.js"></script>
+
+    <!-- 对话配置文件 -->
+    <script src="config/DialogConfig.js"></script>
+    <script src="config/maps/ghost_gate/DialogConfig.js"></script>
+    <script src="config/maps/ghost_shushan/DialogConfig.js"></script>
+    <script src="config/maps/ghost_shushan2/DialogConfig.js"></script>
+    <script src="config/maps/ghost_naihe/DialogConfig.js"></script>
+    <script src="config/maps/shuzhong/DialogConfig.js"></script>
+    <script src="config/maps/youdu/DialogConfig.js"></script>
+    <script src="config/maps/world/DialogConfig.js"></script>
+    <script src="config/GhostShushanDialogConfig.js"></script>
+    <script src="config/NPCDialogConfig.js"></script>
+
+</script>
+
+    <!-- 游戏主程序 -->
+    <script src="js/AudioManager.js"></script>
+    <script src="js/ConfigManager.js"></script>
+    <script src="js/SaveManager.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "gameInfo": {
+    "title": "月如续传",
+    "version": "1.0.0",
+    "startingStory": "chapter1",
+    "startingMap": "world"
+  },
+  "paths": {
+    "stories": "game-config/stories/",
+    "maps": "game-config/maps/",
+    "dialogs": "game-config/dialogs/",
+    "battles": "game-config/battles/"
+  },
+  "settings": {
+    "autoSave": true,
+    "defaultTransitionTime": 500,
+    "battleAnimationSpeed": 1000
+  }
+}

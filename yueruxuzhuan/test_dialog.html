@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话系统测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #2c3e50;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #34495e;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #34495e;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>对话系统测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 检查配置加载</h2>
+        <button onclick="checkConfigs()">检查配置</button>
+        <div id="config-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 测试对话加载</h2>
+        <button onclick="testDialogLoad()">测试对话加载</button>
+        <div id="dialog-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 测试NPC对话</h2>
+        <button onclick="testNPCDialog('linyueru_self')">测试林月如对话</button>
+        <button onclick="testNPCDialog('niutou')">测试牛头对话</button>
+        <button onclick="testNPCDialog('mamian')">测试马面对话</button>
+        <div id="npc-result" class="result"></div>
+    </div>
+
+    <!-- 引入所有必要的配置文件 -->
+    <script src="config/GameConfig.js"></script>
+    <script src="config/StoryConfig.js"></script>
+    <script src="config/MapConfig.js"></script>
+    
+    <!-- 地图配置文件 -->
+    <script src="config/maps/ghost_shushan/MapConfig.js"></script>
+    <script src="config/maps/ghost_gate/MapConfig.js"></script>
+    <script src="config/maps/world/MapConfig.js"></script>
+    
+    <!-- 对话配置文件 -->
+    <script src="config/DialogConfig.js"></script>
+    <script src="config/maps/ghost_gate/DialogConfig.js"></script>
+    <script src="config/maps/ghost_shushan/DialogConfig.js"></script>
+    <script src="config/maps/world/DialogConfig.js"></script>
+    <script src="config/GhostShushanDialogConfig.js"></script>
+    <script src="config/NPCDialogConfig.js"></script>
+    
+    <!-- 游戏管理器 -->
+    <script src="js/AudioManager.js"></script>
+    <script src="js/ConfigManager.js"></script>
+    <script src="js/SaveManager.js"></script>
+
+    <script>
+        function checkConfigs() {
+            const result = document.getElementById('config-result');
+            let html = '<h3>配置检查结果:</h3>';
+            
+            html += `<p>GameConfig存在: ${!!window.GameConfig}</p>`;
+            html += `<p>GameConfig.gameInfo存在: ${!!window.GameConfig?.gameInfo}</p>`;
+            html += `<p>GameConfig.maps存在: ${!!window.GameConfig?.maps}</p>`;
+            html += `<p>GameConfig.dialogs存在: ${!!window.GameConfig?.dialogs}</p>`;
+            html += `<p>GameConfig.stories存在: ${!!window.GameConfig?.stories}</p>`;
+            
+            if (window.GameConfig?.maps) {
+                html += `<p>可用地图: ${Object.keys(window.GameConfig.maps).join(', ')}</p>`;
+            }
+            
+            if (window.GameConfig?.dialogs) {
+                html += `<p>可用对话文件: ${Object.keys(window.GameConfig.dialogs).join(', ')}</p>`;
+            }
+            
+            result.innerHTML = html;
+        }
+        
+        function testDialogLoad() {
+            const result = document.getElementById('dialog-result');
+            const configManager = new ConfigManager();
+            
+            try {
+                const ghostGateDialogs = configManager.loadDialogs('ghost_gate');
+                let html = '<h3>对话加载测试:</h3>';
+                html += `<p>ghost_gate对话加载成功: ${!!ghostGateDialogs}</p>`;
+                
+                if (ghostGateDialogs) {
+                    html += `<p>可用NPC: ${Object.keys(ghostGateDialogs).join(', ')}</p>`;
+                    
+                    // 检查林月如对话
+                    if (ghostGateDialogs.linyueru_self) {
+                        html += `<p>林月如对话存在: ✓</p>`;
+                        html += `<p>林月如对话数量: ${ghostGateDialogs.linyueru_self.dialogs?.length || 0}</p>`;
+                    }
+                    
+                    // 检查牛头对话
+                    if (ghostGateDialogs.niutou) {
+                        html += `<p>牛头对话存在: ✓</p>`;
+                        html += `<p>牛头对话数量: ${ghostGateDialogs.niutou.dialogs?.length || 0}</p>`;
+                    }
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`;
+            }
+        }
+        
+        function testNPCDialog(npcId) {
+            const result = document.getElementById('npc-result');
+            const configManager = new ConfigManager();
+            
+            try {
+                const dialogData = configManager.loadDialogs('ghost_gate');
+                let html = `<h3>${npcId} 对话测试:</h3>`;
+                
+                if (dialogData && dialogData[npcId]) {
+                    const npcData = dialogData[npcId];
+                    html += `<p>NPC名称: ${npcData.name}</p>`;
+                    html += `<p>对话数量: ${npcData.dialogs?.length || 0}</p>`;
+                    
+                    if (npcData.dialogs && npcData.dialogs.length > 0) {
+                        html += '<h4>对话列表:</h4>';
+                        npcData.dialogs.forEach((dialog, index) => {
+                            html += `<p>${index + 1}. ID: ${dialog.id}, 文本: ${dialog.text.substring(0, 50)}...</p>`;
+                        });
+                    }
+                } else {
+                    html += `<p style="color: red;">找不到 ${npcId} 的对话数据</p>`;
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
