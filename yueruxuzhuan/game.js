@@ -116,7 +116,7 @@ class RPGGame {
         document.getElementById('load-btn').addEventListener('click', () => this.loadGame());
         document.getElementById('music-btn').addEventListener('click', () => this.toggleMusic());
         document.getElementById('party-btn').addEventListener('click', () => this.openParty());
-        document.getElementById('main-menu-btn').addEventListener('click', () => this.returnToMainMenu());
+        // 主菜单按钮现在直接使用location.reload()刷新页面
     }
 
     showScene(sceneName) {
@@ -233,7 +233,7 @@ class RPGGame {
                     fontSize: "0.9rem",
                     fontWeight: "bold"
                 },
-                onClick: { action: "endGame"},
+                onClick: { action: "switchToMap", target: "youdu"},
                 unlocked: true,
                 description: "前往幽都"
             }
@@ -392,10 +392,25 @@ class RPGGame {
 
             // 检查是否有onEnter事件
             if (this.currentMap.onEnter) {
-                // 延迟执行onEnter事件，确保地图已经渲染完成
-                setTimeout(() => {
-                    this.executeAction(this.currentMap.onEnter);
-                }, 500);
+                // 检查是否已经触发过onEnter事件
+                const onEnterKey = `onEnter_${mapId}`;
+                if (!this.gameData.flags[onEnterKey]) {
+                    // 标记onEnter事件已触发
+                    this.gameData.flags[onEnterKey] = true;
+
+                    // 延迟执行onEnter事件，确保地图已经渲染完成
+                    setTimeout(async () => {
+                        if (Array.isArray(this.currentMap.onEnter)) {
+                            // 如果onEnter是数组，依次执行所有动作
+                            for (const action of this.currentMap.onEnter) {
+                                await this.executeAction(action);
+                            }
+                        } else {
+                            // 如果onEnter是单个动作
+                            await this.executeAction(this.currentMap.onEnter);
+                        }
+                    }, 500);
+                }
             }
         } catch (error) {
             console.error('加载地图失败:', error);
@@ -998,22 +1013,7 @@ class RPGGame {
         }
     }
 
-    returnToMainMenu() {
-        console.log('返回主菜单');
-        this.showScene('main-menu');
-
-        // 重置游戏状态
-        this.currentMap = null;
-        this.currentStory = null;
-        this.currentStoryId = null;
-        this.savedMapStates = {};
-        this.gameData={};
-
-        // 播放主菜单音乐
-        if (this.audioManager) {
-            this.audioManager.playMusic('001序曲.ogg');
-        }
-    }
+    // returnToMainMenu方法已移除，现在直接使用location.reload()刷新页面
 
     restartGame() {
         console.log('重新开始游戏');

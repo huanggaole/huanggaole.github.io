@@ -38,13 +38,8 @@
             <div class="map-content">
                 <div id="map-background" class="map-background">
                     <div class="map-locations">
-                        <button class="location-btn" data-location="town" style="top: 60%; left: 30%;">城镇</button>
-                        <button class="location-btn" data-location="forest" style="top: 40%; left: 60%;">森林</button>
-                        <button class="location-btn" data-location="dungeon" style="top: 20%; left: 80%;">地牢</button>
                     </div>
                     <div class="map-npcs">
-                        <button class="npc-btn" data-npc="merchant" style="top: 70%; left: 35%;">商人</button>
-                        <button class="npc-btn" data-npc="guard" style="top: 55%; left: 25%;">守卫</button>
                     </div>
                 </div>
 
@@ -76,7 +71,7 @@
                     <button id="load-btn" class="ui-btn">加载</button>
                     <button id="music-btn" class="ui-btn">音乐</button>
                     <button id="party-btn" class="ui-btn">队伍</button>
-                    <button id="main-menu-btn" class="ui-btn">主菜单</button>
+                    <button id="main-menu-btn" class="ui-btn" onclick="location.reload()">主菜单</button>
                 </div>
             </div>
         </div>
@@ -86,7 +81,7 @@
             <div class="end-container">
                 <div class="end-title">未完待续</div>
                 <div class="end-buttons">
-                    <button class="end-btn" onclick="game.returnToMainMenu()">返回主菜单</button>
+                    <button class="end-btn" onclick="location.reload()">返回主菜单</button>
                 </div>
             </div>
         </div>

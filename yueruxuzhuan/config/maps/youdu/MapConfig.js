@@ -6,6 +6,10 @@ window.GameConfig.maps.youdu = {
     backgroundColor: "#2F2F2F",
     backgroundMusic: "058颓城.ogg",
     description: "阴森恐怖的幽都，鬼界的都城，阎罗王统治的地方。",
+    autoTriggerDialog: {
+        npcId: "enter_youdu",
+        dialogFile: "youdu"
+    },
     geometricElements: [
         {
             type: "rectangle",
@@ -62,7 +66,7 @@ window.GameConfig.maps.youdu = {
             id: "yanluo_dian",
             name: "阎罗殿",
             type: "location",
-            position: { x: "45%", y: "35%" },
+            position: { x: "45%", y: "50%" },
             style: {
                 width: "100px",
                 height: "30px",
@@ -73,7 +77,8 @@ window.GameConfig.maps.youdu = {
                 fontSize: "0.9rem",
                 fontWeight: "bold"
             },
-            onClick: { action: "switchToMap", target: "yanluo_dian" },
+            // onClick: { action: "switchToMap", target: "endGame" },
+            onClick: { action: "endGame" },
             unlocked: true,
             description: "阎罗王的宫殿"
         }
@@ -101,7 +106,7 @@ window.GameConfig.maps.youdu = {
             id: "gui_zu_b",
             name: "鬼卒B",
             type: "npc",
-            position: { x: "70%", y: "45%" },
+            position: { x: "65%", y: "50%" },
             style: {
                 width: "80px",
                 height: "28px",
@@ -150,12 +155,30 @@ window.GameConfig.maps.youdu = {
             onClick: { action: "startDialog", target: "gui_ju_min" },
             dialogFile: "youdu",
             description: "居住在幽都的鬼魂"
+        },
+        {
+            id: "hei_wu_chang",
+            name: "黑无常",
+            type: "npc",
+            position: { x: "75%", y: "65%" },
+            style: {
+                width: "100px",
+                height: "28px",
+                backgroundColor: "#2F2F2F",
+                color: "#FFFFFF",
+                borderRadius: "5px",
+                border: "2px solid #696969",
+                fontSize: "0.8rem"
+            },
+            onClick: { action: "startDialog", target: "hei_wu_chang" },
+            dialogFile: "youdu",
+            description: "黑无常，负责勾魂的鬼差"
         }
     ],
-    onEnter: {
-        action: "showAutoMessage",
-        speaker: "林月如",
-        text: "咦？这女飞贼怎么走着走着不见了？",
-        buttonText: "不管她"
-    }
+    onEnter: [
+        {
+            action: "removePartyMember",
+            memberName: "姬三娘"
+        },
+    ]
 };
